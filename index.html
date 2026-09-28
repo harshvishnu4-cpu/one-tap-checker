@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#5d5d5d">
+  <title>Forwarded Message Checker</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="dev/dev-menu.css"><!-- DEV MENU: delete with the dev/ folder -->
+</head>
+<body>
+  <div id="game-shell" aria-label="Forwarded message checker game">
+    <div id="skai-hud" class="skai-hud" aria-label="Mission controls">
+      <img class="skai-logo-tab" src="assets/skai/logo_tab.svg" alt="">
+      <span class="skai-logo" role="img" aria-label="SKAI Space">
+        <img class="skai-logo-skai" src="assets/skai/logo_skai.svg" alt="">
+        <img class="skai-logo-space" src="assets/skai/logo_space.svg" alt="">
+      </span>
+      <button id="skai-back" class="skai-gear skai-back" type="button" aria-label="Go back">
+        <img class="gear" src="assets/skai/gear_back.svg" alt="">
+        <img class="skai-back-icon" src="assets/skai/icon_quit.svg" alt="">
+      </button>
+      <button id="skai-sound" class="skai-gear skai-sound" type="button" aria-label="Mute sound" aria-pressed="false">
+        <img class="gear" src="assets/skai/gear_sound.svg" alt="">
+        <img class="skai-speaker" src="assets/skai/icon_speaker.svg" alt="">
+      </button>
+      <button id="skai-info" class="skai-gear skai-info" type="button" aria-label="Open settings">
+        <img class="gear" src="assets/skai/gear_info.svg" alt="">
+        <img class="skai-info-inner" src="assets/skai/gear_info_inner.svg" alt="">
+        <span aria-hidden="true">i</span>
+      </button>
+      <ul id="skai-players" class="skai-chips hud-chips" aria-label="Players"></ul>
+      <div class="skai-timer" role="timer" aria-label="Mission time left">
+        <img class="skai-timer-frame" src="assets/skai/timer_frame.svg" alt="">
+        <img class="skai-volt" style="--x:1739;--y:22" src="assets/skai/volt.svg" alt="">
+        <img class="skai-volt" style="--x:1739;--y:102" src="assets/skai/volt.svg" alt="">
+        <img class="skai-volt" style="--x:1910;--y:101" src="assets/skai/volt.svg" alt="">
+        <img class="skai-volt" style="--x:1910;--y:22" src="assets/skai/volt.svg" alt="">
+        <span class="skai-timer-text" id="skai-timer-text">35:00</span>
+      </div>
+      <div class="skai-progress" id="skai-progress" role="img" aria-label="Mission step 1 of 10">
+        <span class="skai-progress-tab" style="--y:310"></span>
+        <span class="skai-progress-tab" style="--y:747"></span>
+        <img class="skai-progress-bar" src="assets/skai/progress_bar.svg" alt="">
+        <span class="skai-progress-fill"><img class="skai-progress-stripes" src="assets/skai/progress_stripes.svg" alt=""></span>
+        <span class="skai-progress-text" id="skai-progress-text">1/10</span>
+      </div>
+      <button id="skai-hint" class="skai-gear skai-hint" type="button" aria-label="Show a hint">
+        <img class="gear" src="assets/skai/gear_hint.svg" alt="">
+        <img class="skai-bulb-rays" src="assets/skai/icon_bulb_rays.svg" alt="">
+        <img class="skai-bulb" src="assets/skai/icon_bulb.svg" alt="">
+      </button>
+    </div>
+
+    <main id="stage" class="stage" tabindex="-1" aria-live="polite"></main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="settings-modal" class="modal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <h2 id="settings-title">Settings</h2>
+        <button id="resume-button" class="menu-button primary" type="button">Resume</button>
+        <button id="music-button" class="menu-button" type="button">Music: On</button>
+        <button id="sfx-button" class="menu-button" type="button">Sound effects: On</button>
+        <button id="restart-button" class="menu-button danger" type="button">Restart mission</button>
+      </div>
+    </div>
+
+    <div id="recap-modal" class="modal" hidden>
+      <div class="modal-card recap-card" role="dialog" aria-modal="true" aria-labelledby="recap-title"></div>
+    </div>
+
+    <div id="turn-modal" class="modal" hidden>
+      <div class="modal-card turn-dialog" role="dialog" aria-modal="true" aria-labelledby="turn-title">
+        <span class="turn-kicker">PASS THE DEVICE</span>
+        <h2 id="turn-title"></h2>
+        <strong id="turn-role"></strong>
+        <p id="turn-task"></p>
+        <p class="turn-team-note">Everyone can discuss the evidence. The named player controls this step.</p>
+        <button class="menu-button primary" id="turn-ready" type="button">I'm ready</button>
+      </div>
+    </div>
+    <div id="loading" class="loading">
+      <div class="loading-card">
+        <div class="loading-light" aria-hidden="true"><i></i><i></i><i></i></div>
+        <strong>Preparing the checker…</strong>
+      </div>
+    </div>
+  </div>
+
+  <script src="data/messages.js"></script>
+  <script src="game.js"></script>
+  <script src="dev/dev-menu.js"></script><!-- DEV MENU: delete with the dev/ folder -->
+</body>
+</html>
