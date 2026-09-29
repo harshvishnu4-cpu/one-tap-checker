@@ -22,14 +22,16 @@ Generated with ElevenLabs **Multilingual v2** (`eleven_multilingual_v2`), voice 
 
 ## Highlight cues
 
-While a line names a clue, that clue's card glows and the others dim (`NARRATION_CUES` in `game.js`). Times were measured from the pauses in the recording, so re-measure them if a line is re-recorded.
+While a line names a clue, only that card plays one pop-and-glow animation (`NARRATION_CUES` in `game.js`). Times were measured from the pauses in the recording, so re-measure them if a line is re-recorded.
 
 | File | Seconds | Card(s) lit |
 |---|---|---|
-| tutorial.mp3 | 1.5–2.65 | all four ("four clues") |
 | tutorial.mp3 | 3.0–4.15 | Source ("the source") |
 | tutorial.mp3 | 4.18–5.2 | Date ("the date") |
 | tutorial.mp3 | 5.25–6.3 | Image ("the image") |
 | tutorial.mp3 | 6.35–8.5 | Urgent words ("and urgent words") |
+| ranking.mp3 | 3.75–5.8 | the 20-points bank ("Share twenty points") |
+
+After the ranking line ends, a tapping hand points at the Source "+" button (`NARRATION_NUDGES` in `game.js`); it disappears on the first tap.
 
 Background music is fully silenced while any line plays and resumes when it ends.

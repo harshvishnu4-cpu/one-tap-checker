@@ -61,17 +61,47 @@
   // from the pauses in each recording (see assets/audio/narration/SCRIPT.md).
   const NARRATION_CUES = {
     tutorial: [
-      { at: 1.5, until: 2.65, clues: ['source', 'date', 'image', 'urgent'] }, // "four clues"
       { at: 3.0, until: 4.15, clues: ['source'] },                          // "the source"
       { at: 4.18, until: 5.2, clues: ['date'] },                            // "the date"
       { at: 5.25, until: 6.3, clues: ['image'] },                           // "the image"
       { at: 6.35, until: 8.5, clues: ['urgent'] }                           // "and urgent words"
+    ],
+    ranking: [
+      { at: 3.75, until: 5.8, selector: '.allocation-bank' }                 // "Share twenty points"
     ]
+  };
+  // After a screen's line ends, a hand points at the first thing to tap (removed on the next re-render).
+  const NARRATION_NUDGES = {
+    ranking: '[data-change="1"][data-id="source"]'
   };
   let cueFrame = null;
 
-  function spotlightClues(ids) {
-    stage.querySelectorAll('[data-clue]').forEach(card => card.classList.toggle('narration-spotlight', ids.includes(card.dataset.clue)));
+  // Lights up what a cue names: clue cards (by id) or any element (by selector).
+  function spotlight(cue) {
+    const targets = !cue ? [] : cue.selector
+      ? [...stage.querySelectorAll(cue.selector)]
+      : cue.clues.map(id => stage.querySelector(`[data-clue="${id}"]`)).filter(Boolean);
+    stage.querySelectorAll('.narration-spotlight').forEach(el => { if (!targets.includes(el)) el.classList.remove('narration-spotlight'); });
+    targets.forEach(el => el.classList.add('narration-spotlight'));
+  }
+
+  function showHandNudge(selector) {
+    const target = stage.querySelector(selector);
+    const screen = stage.querySelector('.screen');
+    if (!target || !screen || screen.querySelector('.hand-nudge')) return;
+    const t = target.getBoundingClientRect();
+    const box = screen.getBoundingClientRect();
+    const hand = document.createElement('span');
+    hand.className = 'hand-nudge';
+    hand.setAttribute('aria-hidden', 'true');
+    hand.textContent = '👆';
+    hand.style.left = `${((t.left + t.width / 2 - box.left) / box.width) * 100}%`;
+    hand.style.top = `${((t.bottom - t.height * .2 - box.top) / box.height) * 100}%`;
+    screen.appendChild(hand);
+  }
+
+  function afterNarration(key) {
+    if (NARRATION_NUDGES[key] && narrationKey() === key) showHandNudge(NARRATION_NUDGES[key]);
   }
 
   function runNarrationCues(key) {
@@ -79,10 +109,10 @@
     const cues = NARRATION_CUES[key];
     if (!cues) return;
     const tick = () => {
-      if (!narrationLock) { spotlightClues([]); return; }
+      if (!narrationLock) { spotlight(null); return; }
       const t = narrationAudio.currentTime;
       const cue = cues.find(item => t >= item.at && t < item.until);
-      spotlightClues(cue ? cue.clues : []);
+      spotlight(cue || null);
       cueFrame = requestAnimationFrame(tick);
     };
     cueFrame = requestAnimationFrame(tick);
@@ -114,15 +144,15 @@
     narrationAudio.onended = narrationAudio.onerror = null;
     narrationAudio.pause();
     cancelAnimationFrame(cueFrame);
-    spotlightClues([]);
+    spotlight(null);
     if (narrationLock) setNarrationLock(false);
   }
 
   function playNarration(key) {
     stopNarration();
-    if (!state.soundOn || !NARRATED_SCREENS.has(key)) return;
+    if (!state.soundOn || !NARRATED_SCREENS.has(key)) { afterNarration(key); return; }
     const token = narrationToken;
-    const finish = () => { if (token === narrationToken) stopNarration(); };
+    const finish = () => { if (token === narrationToken) { stopNarration(); afterNarration(key); } };
     narrationAudio.src = `assets/audio/narration/${key}.mp3`;
     narrationAudio.onended = finish;
     narrationAudio.onerror = finish;
@@ -271,7 +301,8 @@
   function onTap(target, handler) {
     const element = typeof target === 'string' ? stage.querySelector(target) : target;
     element?.addEventListener('click', event => {
-      if (transitioning) return;
+      // Ignore taps on a button that a previous tap already replaced (e.g. a fast double-tap on Next message).
+      if (transitioning || !element.isConnected) return;
       handler(event);
     });
   }
@@ -366,6 +397,38 @@
     state = Object.assign(snapshot(entry.snapshot), entry.leaveInputs || {}, keep, { finished: false });
     tone('tap');
     setView(entry.view, entry.renderFn, { force: true, back: true });
+  }
+
+  // Same as setView but without the screen transition: the checker screen stays put and only its
+  // contents update (used between messages). History, the HUD and narration stay in sync.
+  function swapView(view, renderFn) {
+    if (transitioning) return;
+    if (currentScreen) screenHistory.push(currentScreen);
+    state.view = view;
+    state.activePlayerIndex = roleOwner(view);
+    renderFn();
+    currentScreen = { view, renderFn, snapshot: snapshot() };
+    renderProgress();
+    narrateScreen();
+  }
+
+  // A short two-note "new message" chime (respects the sound and effects switches).
+  function notificationChime() {
+    ensureAudio();
+    if (!state.soundOn || !state.sfxOn || !audioContext) return;
+    [[880, 0], [1320, .12]].forEach(([frequency, delay]) => {
+      const start = audioContext.currentTime + delay;
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(.0001, start);
+      gain.gain.exponentialRampToValueAtTime(.07, start + .015);
+      gain.gain.exponentialRampToValueAtTime(.0001, start + .32);
+      oscillator.connect(gain).connect(audioContext.destination);
+      oscillator.start(start);
+      oscillator.stop(start + .34);
+    });
   }
 
   function setView(view, renderFn, { force = false, back = false } = {}) {
@@ -993,7 +1056,7 @@
       phone.setAttribute('aria-busy', 'false');
       scanNote.textContent = 'All four clues checked';
       tone(result.status === 'green' ? 'correct' : result.status === 'red' ? 'wrong' : 'drop');
-      scanLater(() => setView('result', renderResult), 650);
+      scanLater(() => swapView('result', renderResult), 650);
     }, 2750);
   }
 
@@ -1010,7 +1073,10 @@
         setView('batch', renderBatch);
       } else {
         state.currentMessageIndex += 1;
-        setView('test', renderTest);
+        swapView('test', renderTest);
+        notificationChime();
+        stage.querySelector('.phone-display')?.classList.add('message-arrived');
+        stage.querySelector('#check-message')?.focus({ preventScroll: true });
       }
     });
   }
