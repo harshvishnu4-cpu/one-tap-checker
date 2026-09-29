@@ -8,7 +8,7 @@ const viewportHeight = Number(process.env.VIEWPORT_HEIGHT || 900);
 const testPlayerCount = Number(process.env.TEST_PLAYER_COUNT || 3);
 // Clue ids from most to least important, e.g. "urgent,source,date,image".
 const testOrder = (process.env.TEST_ORDER || 'source,date,image,urgent').split(',');
-const testStyle = process.env.TEST_STYLE || 'balanced';
+const testStyle = 'strict';
 const shotPrefix = process.env.SHOT_PREFIX || '';
 // Clues the simulated fixer prefers to take stars from (otherwise: the clue with the most stars).
 const donorPreference = (process.env.TEST_DONOR_PREF || '').split(',').filter(Boolean);
@@ -21,8 +21,7 @@ async function sleep(ms) {
 async function getPageTarget() {
   for (let attempt = 0; attempt < 40; attempt += 1) {
     try {
-      const targets = await fetch(`${endpoint}/json/list`).then(response => response.json());
-      const target = targets.find(item => item.type === 'page' && item.url.includes('index.html'));
+      const target = await fetch(`${endpoint}/json/new?file:///D:/one%20tap%20checker%20app/index.html?flow-qa`, { method: 'PUT' }).then(response => response.json());
       if (target) return target;
     } catch {}
     await sleep(250);
@@ -89,13 +88,25 @@ async function waitFor(selector, timeout = 8000) {
 
 async function click(selector) {
   await waitFor(selector);
+  await evaluate(`(() => { const modal = document.querySelector('#turn-modal'); if (modal && !modal.hidden) document.querySelector('#turn-ready').click(); })()`);
   const clicked = await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el || el.disabled) return false; el.click(); return true; })()`);
   if (!clicked) throw new Error(`Element was not clickable: ${selector}`);
   await sleep(280);
 }
 
 async function screenshot(name) {
-  await sleep(80);
+  await evaluate(`(() => { const modal=document.querySelector('#turn-modal'); if (modal && !modal.hidden) document.querySelector('#turn-ready').click(); })()`);
+  await sleep(650);
+  const overlap = await evaluate(`(() => {
+    const button = document.querySelector('.bottom-cta:not(:disabled), .bottom-actions');
+    if (!button || getComputedStyle(button).visibility==='hidden') return [];
+    const b=button.getBoundingClientRect();
+    return [...document.querySelectorAll('.role-grid,.result-layout,.batch-layout,.final-layout,.adjust-layout,.cause-layout,.retest-layout,.rank-slots')].filter(el=>{
+      const r=el.getBoundingClientRect();
+      return r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top;
+    }).map(el=>el.className);
+  })()`);
+  if (overlap.length) throw new Error(`Content overlaps action button in ${name}: ${overlap.join(', ')}`);
   await fs.mkdir(artifactDir, { recursive: true });
   const result = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
   await fs.writeFile(path.join(artifactDir, shotPrefix + name), Buffer.from(result.data, 'base64'));
@@ -171,20 +182,31 @@ for (const clue of ['source', 'date', 'image', 'urgent']) await click(`[data-clu
 await screenshot('01-tutorial.png');
 await click('#tutorial-next');
 
-await waitFor('.rank-slot');
+const pausedAt = await evaluate('CheckerDev.state.timeLeft');
+await sleep(1200);
+if (await evaluate('CheckerDev.state.timeLeft') !== pausedAt) throw new Error('Clock ran during a player handoff');
+await command('Input.dispatchKeyEvent', {type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
+await command('Input.dispatchKeyEvent', {type:'keyUp',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
+if (!await evaluate(`document.activeElement.id==='turn-ready'`)) throw new Error('Keyboard focus escaped handoff');
+
+await waitFor('.allocation-card');
 await expectRole('Rule Builder', 'ranking');
 if (!await evaluate(`document.querySelector('#ranking-next').disabled`)) throw new Error('Next must be disabled until all clues are ranked');
 await screenshot('05-ranking-empty.png');
 for (let slot = 0; slot < 4; slot += 1) {
-  await click(`.rank-pool [data-clue="${testOrder[slot]}"]`);
-  await click(`.rank-slot[data-slot="${slot}"]`);
+  for (let n=0;n<(4-slot)*2;n++) await click(`[data-id="${testOrder[slot]}"][data-change="1"]`);
 }
 await screenshot('05-ranking.png');
 await click('#ranking-next');
+await click('#sensitivity-next');
 
-await click(`[data-style="${testStyle}"]`);
-await screenshot('06-style.png');
-await click('#style-next');
+// The checker-style screen is optional: the game may use a fixed rule and go straight to the first message.
+await sleep(400);
+if (await exists('[data-style]')) {
+  await click(`[data-style="${testStyle}"]`);
+  await screenshot('06-style.png');
+  await click('#style-next');
+}
 
 for (let index = 0; index < 8; index += 1) {
   await waitFor('#check-message');
@@ -243,7 +265,7 @@ if (batchSummary.review > 0) {
     await click(`[data-weight-card="${plan.to}"]`);
     if (fixRounds === 0) await screenshot('07-adjust.png');
     const total = await evaluate(`[...document.querySelectorAll('[data-weight-card]')].reduce((sum, card) => sum + Number(card.dataset.weight), 0)`);
-    if (total !== 10) throw new Error(`Star total changed to ${total}`);
+    if (total !== 20) throw new Error(`Point total changed to ${total}`);
     await click('#retest-button');
     await waitFor('.retest-result');
     await expectRole('Message Tester', 'retest');
@@ -272,10 +294,13 @@ await waitFor('#recap-modal:not([hidden]) #play-again');
 const recapCount = await evaluate(`document.querySelectorAll('.recap-point').length`);
 await screenshot('04-recap.png');
 await click('#skai-sound');
+await waitFor('#sound-menu:not([hidden])');
+await click('#sound-mute');
 await click('#play-again');
 await waitFor('.skai-count-card');
 const muteKept = await evaluate(`document.querySelector('#skai-sound').classList.contains('muted')`);
 await click('#skai-sound');
+await click('#sound-mute');
 await click('#skai-info');
 await waitFor('#settings-modal:not([hidden])');
 const settingsIntact = await evaluate(`['#resume-button', '#music-button', '#sfx-button', '#restart-button'].every(selector => document.querySelector(selector))`);

@@ -1,0 +1,5 @@
+# Mission team background
+
+Asset: `bg_mission_lab.png`. Generated using the built-in image tool from the user's September 29 team-screen reference. Existing selected robot avatars and separate clue icons are reused; cards and text are live HTML/CSS.
+
+Prompt: Use case: precise-object-edit. Create a standalone background asset for this game's team introduction. Use the supplied image as the edit target. Remove ALL foreground interface elements: title, yellow title strip and marks, subtitle, all three cards, avatars, icons, names, descriptions and yellow button. Reconstruct the continuous empty robotics classroom behind them. Preserve the reference's softly illustrated bright classroom, blue grey walls, tall sunlit windows on left, computers on side benches, stool right, warm wooden worktable across bottom with laptop/books at bottom left and small robot and tools at bottom right. Quiet pale center for UI overlay. No text, no cards, no UI, no characters, no logos. 16:9 landscape background, polished soft 3D illustration matching reference.

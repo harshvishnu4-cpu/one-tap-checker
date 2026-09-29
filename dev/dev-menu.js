@@ -4,6 +4,9 @@
 (() => {
   'use strict';
 
+  // Shown by default while testing. Add ?dev=0 to the URL to hide it (e.g. for a clean demo).
+  if (new URLSearchParams(location.search).get('dev') === '0') return;
+
   const dev = window.CheckerDev;
   if (!dev) {
     console.warn('Dev menu: window.CheckerDev hook not found in game.js.');
@@ -18,7 +21,6 @@
     { id: 'intro', label: 'Intro', group: 'Build the rule' },
     { id: 'tutorial', label: 'Tutorial · 4 clues', group: 'Build the rule' },
     { id: 'ranking', label: 'Rank the clues', group: 'Build the rule' },
-    { id: 'style', label: 'Checker style', group: 'Build the rule' },
     { id: 'test', label: 'Check a message', group: 'Test run' },
     { id: 'result', label: 'Result', group: 'Test run' },
     { id: 'batch', label: 'Batch summary', group: 'Test run' },
@@ -31,7 +33,7 @@
 
   const DEMO_NAMES = ['Aarav', 'Maya', 'Rohan', 'Zoya'];
   const DEMO_AVATARS = [3, 2, 1, 0];
-  // Balanced style with this ranking leaves exactly one mistake, so the fix screens always have work to show.
+  // This ranking leaves a mistake under Strict checking, so repair screens have work to show.
   const DEMO_ORDER = ['source', 'date', 'image', 'urgent'];
 
   // ---------- Demo data: fill in only what the target page needs and is still missing ----------
@@ -47,7 +49,7 @@
     ensureTeam(s);
     if (!s.clueOrder.every(Boolean)) s.clueOrder = [...DEMO_ORDER];
     if (Object.keys(s.weights).length !== 4) s.weights = Object.fromEntries(s.clueOrder.map((id, index) => [id, 4 - index]));
-    s.checkerStyle = s.checkerStyle || 'balanced';
+    s.checkerStyle = 'strict';
   }
 
   function ensureTestRun(s) {
@@ -65,7 +67,7 @@
     if (!mistakes.length) {
       s.clueOrder = [...DEMO_ORDER];
       s.weights = Object.fromEntries(DEMO_ORDER.map((id, index) => [id, 4 - index]));
-      s.checkerStyle = 'balanced';
+      s.checkerStyle = 'strict';
       mistakes = dev.findMistakes();
     }
     const stillWrong = s.debug && mistakes.find(item => item.message.id === s.debug.messageId);
@@ -104,9 +106,6 @@
       case 'ranking':
         ensureTeam(s);
         s.selectedClue = null;
-        break;
-      case 'style':
-        ensureRule(s);
         break;
       case 'test':
         ensureRule(s);

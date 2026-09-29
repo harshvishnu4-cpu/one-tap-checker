@@ -21,23 +21,37 @@ for(let i=0;i<3;i++) {
 }
 await click('#team-start');
 await click('#roles-next');
+await fs.mkdir('.test-artifacts',{recursive:true});
+await pause(500);
+const introShot = await cmd('Page.captureScreenshot',{format:'png'});
+await fs.writeFile('.test-artifacts/notification-intro.png',Buffer.from(introShot.data,'base64'));
+await click('#dismiss-notification');
+await click('#reopen-notification');
 await click('#start-game');
 await click('#tutorial-next');
-for(let i=0;i<4;i++){await click('.rank-pool .clue-card');await click(`[data-slot="${i}"]`);}
+for(let i=0;i<4;i++){for(let n=0;n<4-i;n++)await click(`[data-id="${['source','date','image','urgent'][i]}"][data-change="1"]`);}
 await click('#ranking-next');
-await click('[data-style="balanced"]');
-await click('#style-next');
+await click('#sensitivity-next');
 await pause(400);
 const handoff = await evaluate(`({visible: !document.querySelector('#turn-modal').hidden, name:document.querySelector('#turn-title').textContent,role:document.querySelector('#turn-role').textContent})`);
 if (!handoff.visible || !handoff.name.includes('Maya') || handoff.role !== 'Message Tester') throw new Error('Tester handoff missing');
 await click('#turn-ready');
-const check = await evaluate(`({phone:!!document.querySelector('.phone-frame'), text:document.querySelector('.phone-display').innerText, loaded:document.querySelector('.phone-frame').naturalWidth>0})`);
+const check = await evaluate(`({tablet:!!document.querySelector('.tablet-frame'), text:document.querySelector('.tablet-display').innerText, loaded:document.querySelector('.tablet-frame').naturalWidth>0, strict:CheckerDev.state.checkerStyle==='strict', styleChooserRemoved:!CheckerDev.views.style})`);
 await fs.mkdir('.test-artifacts',{recursive:true});
 const shot=await cmd('Page.captureScreenshot',{format:'png'});
-await fs.writeFile('.test-artifacts/phone-gameplay.png',Buffer.from(shot.data,'base64'));
+await fs.writeFile('.test-artifacts/tablet-gameplay.png',Buffer.from(shot.data,'base64'));
 await click('#check-message');
 await pause(2500);
 check.result = await evaluate(`!!document.querySelector('#result-next')`);
+for(let i=1;i<8;i++) {
+  await click('#result-next');
+  await click('#check-message');
+  await pause(2500);
+  if(!await evaluate(`!!document.querySelector('#result-next')`)) throw new Error(`Message ${i+1} did not finish`);
+}
+await click('#result-next');
+check.allMessages = await evaluate(`CheckerDev.state.testResults.length===8 && CheckerDev.state.view==='batch'`);
+check.strictBoundaries = await evaluate(`(()=>{const m={id:'qa',issues:{source:true,date:false,image:false,urgent:false}};return [2,3,4].map(source=>CheckerDev.computeResult(m,{source,date:0,image:0,urgent:0}).status).join(',')==='green,amber,red';})()`);
 console.log(JSON.stringify(check,null,2));
 ws.close();
-if(!check.loaded || !check.result)process.exitCode=1;
+if(!check.loaded || !check.result || !check.strict || !check.styleChooserRemoved || !check.allMessages || !check.strictBoundaries)process.exitCode=1;

@@ -10,45 +10,68 @@
 </head>
 <body>
   <div id="game-shell" aria-label="Forwarded message checker game">
+    <div class="hud-rails" id="hud-rails" aria-hidden="true">
+      <img class="rail-left" src="assets/skai/v2/rail_left.svg" alt="">
+      <img class="rail-slash" style="--x:308" src="assets/skai/v2/rail_slash.svg" alt="">
+      <img class="rail-slash" style="--x:334" src="assets/skai/v2/rail_slash.svg" alt="">
+      <img class="rail-right" src="assets/skai/v2/rail_right.svg" alt="">
+      <img class="rail-bar" src="assets/skai/v2/rail_bar.svg" alt="">
+    </div>
     <div id="skai-hud" class="skai-hud" aria-label="Mission controls">
-      <img class="skai-logo-tab" src="assets/skai/logo_tab.svg" alt="">
+      <img class="hud-back-tab" src="assets/skai/v2/back_tab.svg" alt="">
       <span class="skai-logo" role="img" aria-label="SKAI Space">
-        <img class="skai-logo-skai" src="assets/skai/logo_skai.svg" alt="">
-        <img class="skai-logo-space" src="assets/skai/logo_space.svg" alt="">
+        <img class="skai-logo-skai" src="assets/skai/v2/logo_skai.svg" alt="">
+        <img class="skai-logo-space" src="assets/skai/v2/logo_space.svg" alt="">
       </span>
-      <button id="skai-back" class="skai-gear skai-back" type="button" aria-label="Go back">
-        <img class="gear" src="assets/skai/gear_back.svg" alt="">
-        <img class="skai-back-icon" src="assets/skai/icon_quit.svg" alt="">
+      <button id="skai-back" class="hud-button hud-back" type="button" aria-label="Go back"></button>
+      <img class="hud-bracket" src="assets/skai/v2/hud_bracket.svg" alt="">
+      <button id="skai-sound" class="hud-button hud-sound" type="button" aria-label="Sound options" aria-haspopup="true" aria-expanded="false" aria-controls="sound-menu">
+        <img class="hex" src="assets/skai/v2/sound_hex.svg" alt="">
+        <img class="hud-speaker" src="assets/skai/v2/speaker.svg" alt="">
       </button>
-      <button id="skai-sound" class="skai-gear skai-sound" type="button" aria-label="Mute sound" aria-pressed="false">
-        <img class="gear" src="assets/skai/gear_sound.svg" alt="">
-        <img class="skai-speaker" src="assets/skai/icon_speaker.svg" alt="">
-      </button>
-      <button id="skai-info" class="skai-gear skai-info" type="button" aria-label="Open settings">
-        <img class="gear" src="assets/skai/gear_info.svg" alt="">
-        <img class="skai-info-inner" src="assets/skai/gear_info_inner.svg" alt="">
+      <div id="sound-menu" class="sound-menu" role="menu" aria-label="Sound options" hidden>
+        <button class="sound-menu-item" id="sound-replay" type="button" role="menuitem">
+          <img src="assets/skai/v2/icon_replay.svg" alt=""><span>Replay<br>Narration</span>
+        </button>
+        <button class="sound-menu-item" id="sound-mute" type="button" role="menuitem">
+          <span class="mute-icon" aria-hidden="true"><img src="assets/skai/v2/icon_mute_ring.svg" alt=""><img class="mute-inner" src="assets/skai/v2/icon_mute.svg" alt=""></span><span id="sound-mute-label">Mute All<br>Sounds</span>
+        </button>
+      </div>
+      <button id="skai-info" class="hud-button hud-info" type="button" aria-label="Open settings">
+        <img class="hex" src="assets/skai/v2/info_hex.svg" alt="">
         <span aria-hidden="true">i</span>
       </button>
-      <ul id="skai-players" class="skai-chips hud-chips" aria-label="Players"></ul>
-      <div class="skai-timer" role="timer" aria-label="Mission time left">
-        <img class="skai-timer-frame" src="assets/skai/timer_frame.svg" alt="">
-        <img class="skai-volt" style="--x:1739;--y:22" src="assets/skai/volt.svg" alt="">
-        <img class="skai-volt" style="--x:1739;--y:102" src="assets/skai/volt.svg" alt="">
-        <img class="skai-volt" style="--x:1910;--y:101" src="assets/skai/volt.svg" alt="">
-        <img class="skai-volt" style="--x:1910;--y:22" src="assets/skai/volt.svg" alt="">
+      <div class="hud-timer" role="timer" aria-label="Mission time left">
+        <img src="assets/skai/v2/timer_plate.svg" alt="">
         <span class="skai-timer-text" id="skai-timer-text">35:00</span>
       </div>
-      <div class="skai-progress" id="skai-progress" role="img" aria-label="Mission step 1 of 10">
-        <span class="skai-progress-tab" style="--y:310"></span>
-        <span class="skai-progress-tab" style="--y:747"></span>
-        <img class="skai-progress-bar" src="assets/skai/progress_bar.svg" alt="">
-        <span class="skai-progress-fill"><img class="skai-progress-stripes" src="assets/skai/progress_stripes.svg" alt=""></span>
+      <ul id="skai-players" class="skai-chips hud-chips" aria-label="Players"></ul>
+      <div class="hud-progress" id="skai-progress" role="img" aria-label="Mission step 1 of 10">
+        <svg class="hud-progress-frame" width="90" height="640" viewBox="0 0 90 640" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M0.386806 11.7959C0.192124 5.85895 5.70092 1.36509 11.4778 2.74835L83.0958 19.8973C87.1446 20.8668 90 24.4866 90 28.6499V586.717C90 589.644 88.5762 592.389 86.1829 594.075L34.6181 630.398C28.7651 634.521 20.6747 630.49 20.4401 623.335L0.386806 11.7959Z" fill="white"/>
+          <g class="hud-progress-stripes">
+            <path d="M62 580.396L62 542.502L42 570.424L42 610.312L62 580.396Z" fill="#FCA01B"/>
+            <path d="M62 533.396L62 495.502L42 523.424L42 563.312L62 533.396Z" fill="#FCA01B"/>
+            <path d="M62 486.396L62 448.502L42 476.424L42 516.312L62 486.396Z" fill="#FBEBA8"/>
+            <path d="M62 436.396L62 398.502L42 426.424L42 466.312L62 436.396Z" fill="#FBEBA8"/>
+            <path d="M62 386.396L62 348.502L42 376.424L42 416.312L62 386.396Z" fill="#FBEBA8"/>
+            <path d="M62 336.396L62 298.502L42 326.424L42 366.312L62 336.396Z" fill="#FBEBA8"/>
+            <path d="M62 286.396L62 248.502L42 276.424L42 316.312L62 286.396Z" fill="#FBEBA8"/>
+            <path d="M62 236.396L62 198.502L42 226.424L42 266.312L62 236.396Z" fill="#FBEBA8"/>
+            <path d="M62 186.396L62 148.502L42 176.424L42 216.312L62 186.396Z" fill="#FBEBA8"/>
+            <path d="M62 136.396L62 98.5024L42 126.424L42 166.312L62 136.396Z" fill="#FBEBA8"/>
+          </g>
+        </svg>
+        <img class="hud-volt" style="--x:1944;--y:805" src="assets/skai/v2/volt.svg" alt="">
+        <img class="hud-volt" style="--x:1893;--y:840" src="assets/skai/v2/volt.svg" alt="">
+        <img class="hud-volt flip" style="--x:1873;--y:233" src="assets/skai/v2/volt.svg" alt="">
+        <img class="hud-volt flip" style="--x:1944;--y:249" src="assets/skai/v2/volt.svg" alt="">
         <span class="skai-progress-text" id="skai-progress-text">1/10</span>
       </div>
-      <button id="skai-hint" class="skai-gear skai-hint" type="button" aria-label="Show a hint">
-        <img class="gear" src="assets/skai/gear_hint.svg" alt="">
-        <img class="skai-bulb-rays" src="assets/skai/icon_bulb_rays.svg" alt="">
-        <img class="skai-bulb" src="assets/skai/icon_bulb.svg" alt="">
+      <button id="skai-hint" class="hud-button hud-hint" type="button" aria-label="Show a hint">
+        <img class="hint-badge" src="assets/skai/v2/hint_badge.svg" alt="">
+        <img class="hint-rays" src="assets/skai/v2/hint_rays.svg" alt="">
+        <img class="hint-bulb" src="assets/skai/v2/hint_bulb.svg" alt="">
       </button>
     </div>
 

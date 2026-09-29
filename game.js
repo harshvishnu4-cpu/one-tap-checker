@@ -14,6 +14,35 @@
   const skaiProgress = document.querySelector('#skai-progress');
   const skaiProgressText = document.querySelector('#skai-progress-text');
   const skaiTimerText = document.querySelector('#skai-timer-text');
+
+  // Bottom CTA + HUD rail lines: the rails only show while a bottom CTA is on screen. When a CTA
+  // first appears it pops in and the rails slide out from behind it. Re-renders of the same
+  // screen keep the button still; leaving a screen retracts the rails.
+  const BOTTOM_CTA = '.bottom-cta, .bottom-actions, .skai-cta';
+  let ctaShown = false;
+  function hideCtaRails() {
+    ctaShown = false;
+    gameShell.classList.remove('cta-rails');
+  }
+  // A CTA only counts as "needed" once it can be pressed: disabled buttons stay hidden (see styles.css)
+  // and pop in the moment they become enabled.
+  function neededCta() {
+    return [...stage.querySelectorAll(BOTTOM_CTA)].find(element =>
+      element.matches('button') ? !element.disabled : Boolean(element.querySelector('button:not(:disabled)')));
+  }
+  function syncCtaRails() {
+    const cta = neededCta();
+    if (cta && !ctaShown) {
+      cta.classList.remove('cta-pop');
+      void cta.offsetWidth; // restart the pop if this same button was hidden and shown again
+      cta.classList.add('cta-pop');
+      gameShell.classList.add('cta-rails');
+    } else if (!cta && ctaShown) {
+      gameShell.classList.remove('cta-rails');
+    }
+    ctaShown = Boolean(cta);
+  }
+  new MutationObserver(syncCtaRails).observe(stage, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
   const MISSION_SECONDS = 35 * 60;
 
   const CLUES = [
@@ -24,19 +53,15 @@
   ];
 
   // green: scores below this stay "Likely okay". red: scores at or above this are "Suspicious".
-  const STYLES = [
-    { id: 'careful', label: 'Careful', asset: 'assets/styles/checker_style_careful.png', green: 2, red: 7 },
-    { id: 'balanced', label: 'Balanced', asset: 'assets/styles/checker_style_balanced.png', green: 3, red: 5 },
-    { id: 'strict', label: 'Strict', asset: 'assets/styles/checker_style_strict.png', green: 3, red: 4 }
-  ];
+  const STRICT_RULE = Object.freeze({ green: 6, red: 8 });
 
-  const TOTAL_STARS = 10;
+  const TOTAL_STARS = 20;
   const MIN_STARS = 1;
-  const MAX_STARS = 5;
+  const MAX_STARS = 10;
 
   const SCREEN_PROGRESS = {
-    setup: 0, roles: 1, intro: 2, tutorial: 3, ranking: 4, style: 5,
-    test: 6, result: 6, batch: 7, cause: 8, adjust: 9, retest: 9, final: 10
+    setup: 0, roles: 1, intro: 2, tutorial: 3, ranking: 4,
+    sensitivity: 5, test: 6, result: 6, batch: 7, cause: 8, adjust: 9, retest: 9, final: 10
   };
 
   function freshState(audio = {}) {
@@ -53,7 +78,9 @@
       clueOrder: [null, null, null, null],
       selectedClue: null,
       weights: {},
-      checkerStyle: null,
+      checkerStyle: 'strict',
+      reviewThreshold: 6,
+      suspiciousThreshold: 8,
       currentMessageIndex: 0,
       testResults: [],
       currentResult: null,
@@ -96,7 +123,6 @@
   }
 
   const clueById = id => CLUES.find(clue => clue.id === id);
-  const styleById = id => STYLES.find(style => style.id === id);
   const messageById = id => window.MESSAGE_DATA.find(message => message.id === id);
   const currentMessage = () => window.MESSAGE_DATA[state.currentMessageIndex];
   const playerColors = ['#309ce8', '#7e58d6', '#2bbe6f', '#eb951f'];
@@ -209,8 +235,34 @@
     toastTimer = setTimeout(() => toastEl.classList.remove('show'), duration);
   }
 
-  function setView(view, renderFn, { force = false } = {}) {
+  // ---------- Screen history for the back tab ----------
+  // Each entry is a screen plus the state as it was when that screen was first shown. The back tab
+  // restores the previous entry, keeping the team (names, avatars), sound settings and the clock.
+  let screenHistory = [];
+  let currentScreen = null;
+  const snapshot = (source = state) => (typeof structuredClone === 'function' ? structuredClone(source) : JSON.parse(JSON.stringify(source)));
+
+  function goBack() {
+    if (transitioning || !screenHistory.length) return;
+    const entry = screenHistory.pop();
+    scanTimers.forEach(clearTimeout);
+    scanTimers.clear();
+    const keep = { players: [...state.players], avatars: [...state.avatars], playerCount: state.playerCount, soundOn: state.soundOn, musicOn: state.musicOn, sfxOn: state.sfxOn, timeLeft: state.timeLeft };
+    state = Object.assign(snapshot(entry.snapshot), entry.leaveInputs || {}, keep, { finished: false });
+    tone('tap');
+    setView(entry.view, entry.renderFn, { force: true, back: true });
+  }
+
+  function setView(view, renderFn, { force = false, back = false } = {}) {
     if (transitioning && !force) return;
+    if (!back && currentScreen) {
+      // The ranking screen's own edits (the points) survive going back to it.
+      if (currentScreen.view === 'ranking') currentScreen.leaveInputs = { weights: { ...state.weights }, clueOrder: [...state.clueOrder] };
+      screenHistory.push(currentScreen);
+    }
+    document.querySelector('#turn-modal').hidden = true;
+    toggleSoundMenu(false);
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     clearTimeout(transitionTimer);
     clearTimeout(toastTimer);
     toastEl.classList.remove('show');
@@ -218,6 +270,7 @@
     stage.inert = true;
     stage.style.pointerEvents = 'none';
     stage.classList.add('leaving');
+    hideCtaRails();
     transitionTimer = setTimeout(() => {
       const previousOwner = state.activePlayerIndex;
       state.view = view;
@@ -227,11 +280,12 @@
       stage.classList.remove('leaving');
       stage.classList.add('entering');
       renderFn();
+      currentScreen = { view, renderFn, snapshot: snapshot() };
       renderProgress();
       transitioning = false;
       requestAnimationFrame(() => stage.classList.remove('entering'));
       stage.focus({ preventScroll: true });
-      const tasks = { ranking: 'Rank the four clues. Discuss their importance with your team, then place them in order.', test: 'Read the message aloud. Ask your team about the four clues, then press Check.', cause: 'Compare the result with the evidence. Choose the clue that caused the mistake.', adjust: 'Listen to the detective, move one star, then ask the tester to retest.', retest: 'Read the new result aloud. Check whether the change helped or created another mistake.' };
+      const tasks = { ranking: 'Share 20 points across the four clues using plus and minus. Discuss each weight; every clue needs 1–10 points.', test: 'Read the message aloud. Ask your team about the four clues, then press Check.', cause: 'Compare the result with the evidence. Choose the clue that caused the mistake.', adjust: 'Listen to the detective, move one star, then ask the tester to retest.', retest: 'Read the new result aloud. Check whether the change helped or created another mistake.' };
       if (tasks[view] && (previousOwner !== state.activePlayerIndex || view === 'ranking')) {
         const modal = document.querySelector('#turn-modal');
         document.querySelector('#turn-title').textContent = `${activePlayerName()}, your turn`;
@@ -250,12 +304,15 @@
   function renderProgress() {
     const isSetup = state.view === 'setup';
     gameShell.classList.toggle('setup-mode', isSetup);
-    skaiBack.disabled = isSetup && state.setupStep === 'count';
-    skaiBack.setAttribute('aria-label', isSetup ? 'Go back' : 'Open the mission menu');
+    skaiBack.disabled = !screenHistory.length;
+    skaiBack.setAttribute('aria-label', 'Back to the previous screen');
     const current = isSetup ? 1 : Math.max(1, SCREEN_PROGRESS[state.view] || 1);
     const total = Math.max(...Object.values(SCREEN_PROGRESS));
     skaiProgressText.textContent = `${current}/${total}`;
-    skaiProgress.style.setProperty('--fill', String(current / total));
+    // The Figma bar has ten stripes (bottom → top); light up the share of the mission that is done.
+    const stripes = skaiProgress.querySelectorAll('.hud-progress-stripes path');
+    const lit = Math.round((current / total) * stripes.length);
+    stripes.forEach((stripe, index) => stripe.setAttribute('fill', index < lit ? '#FCA01B' : '#FBEBA8'));
     skaiProgress.setAttribute('aria-label', `Mission step ${current} of ${total}`);
     if (isSetup) {
       skaiPlayers.innerHTML = '';
@@ -281,7 +338,7 @@
   function startMissionClock() {
     if (missionTimer) return;
     missionTimer = setInterval(() => {
-      if (state.view === 'setup' || state.finished || !settingsModal.hidden || state.timeLeft <= 0) return;
+      if (state.view === 'setup' || state.finished || document.hidden || document.querySelector('.modal:not([hidden])') || state.timeLeft <= 0) return;
       state.timeLeft -= 1;
       renderMissionClock();
     }, 1000);
@@ -434,7 +491,7 @@
   }
 
   function skaiCtaInner(label) {
-    return `${['tl', 'bl', 'tr', 'br'].map(corner => `<img class="skai-cta-volt ${corner}" src="assets/skai/volt_button.svg" alt="">`).join('')}<span>${label}</span>`;
+    return `<span>${label}</span>`;
   }
 
   function teamReady() {
@@ -494,26 +551,6 @@
     });
   }
 
-  function setupBack() {
-    if (transitioning || state.view !== 'setup') return;
-    tone('tap');
-    if (state.setupStep === 'team') {
-      state.pickerIndex = state.playerCount - 1;
-      state.returnToTeam = false;
-      goSetup('picker');
-    } else if (state.setupStep === 'picker') {
-      if (state.returnToTeam) {
-        state.returnToTeam = false;
-        goSetup('team');
-      } else if (state.pickerIndex > 0) {
-        state.pickerIndex -= 1;
-        goSetup('picker');
-      } else {
-        goSetup('count');
-      }
-    }
-  }
-
   function setupHint() {
     const hints = {
       count: 'Tap 3 or 4 to choose how many explorers are playing.',
@@ -526,21 +563,44 @@
 
   function renderRoles() {
     const tasks = state.playerCount === 4
-      ? ['Rank the clues and choose the checker style.', 'Run the message checks and retest the repaired rule.', 'Find the clue behind each mistake.', 'Move stars to repair the rule.']
-      : ['Rank the clues and choose the checker style.', 'Run the message checks and retest the repaired rule.', 'Find each mistake and move stars to repair the rule.'];
-    stage.innerHTML = `<section class="screen roles-screen"><h1 class="screen-heading">Meet your mission team</h1><p class="screen-support">Share one device. Pass it on when the highlighted role changes.</p><div class="role-grid">${state.players.map((name, i) => `<article class="panel role-card">${avatarMarkup(state.avatars[i], 'role-avatar')}<h2>${escapeHtml(name)}</h2><strong>${teamRoles()[i]}</strong><p>${tasks[i]}</p></article>`).join('')}</div><button class="primary-cta bottom-cta" id="roles-next" type="button">Team ready</button></section>`;
+      ? ['Share 20 points across the four clues. Then set how carefully the checker checks.', 'Read each message, run its checks, and retest the repaired rule.', 'Find the clue behind each mistake.', 'Move stars to repair the rule.']
+      : ['Share 20 points across the four clues. Then set how carefully the checker checks.', 'Read each message, run its checks, and retest the repaired rule.', 'Find each mistake and move stars to repair the rule.'];
+    const roleIcons = ['assets/icons/icon_source_3d.png', 'assets/icons/icon_date_3d.png', 'assets/icons/icon_image_3d.png', 'assets/icons/icon_urgent_words_3d.png'];
+    stage.innerHTML = `<section class="screen roles-screen" data-team-size="${state.playerCount}">
+      <header class="mission-team-heading"><h1 class="screen-heading">Meet Your Mission Team</h1><p class="screen-support">Everyone has a role. Work together to build and test the checker.</p></header>
+      <div class="role-grid">${state.players.map((name, i) => `<article class="panel role-card" style="--role-accent:${['#08b6bf','#ef438f','#ff951b','#8262cf'][i]}">
+        <div class="role-identity">${avatarMarkup(state.avatars[i], 'role-avatar')}<h2>${escapeHtml(name)}</h2><strong class="role-ribbon"><span aria-hidden="true">${['✦','✓','⌕','↔'][i]}</span>${teamRoles()[i]}</strong></div>
+        <div class="role-job"><img src="${roleIcons[i]}" alt=""><p>${tasks[i]}</p></div>
+      </article>`).join('')}</div>
+      <p class="team-device-note">One shared device · Pass it on when the active player changes.</p>
+      <button class="primary-cta bottom-cta" id="roles-next" type="button">Let’s begin <span aria-hidden="true">→</span></button>
+    </section>`;
     onTap('#roles-next', () => { tone('tap'); setView('intro', renderIntro); });
   }
 
   function renderIntro() {
     stage.innerHTML = `
       <section class="screen intro">
-        <img class="character left" src="assets/characters/guide_phone_worried.png" alt="A parent looking thoughtfully at a forwarded message">
-        <img class="intro-message" src="assets/messages/message_school_closure_3d.png" alt="Forwarded school closure message">
-        <div class="speech">Can your team help this parent check a forward?</div>
-        <img class="character right" src="assets/characters/kids_group_listening.png" alt="Three students ready to help">
-        <button class="primary-cta bottom-cta" id="start-game" type="button">Let’s build a checker!</button>
+        <div class="intro-parent"><img src="assets/characters/guide_phone_worried.png" alt="A worried parent looking thoughtfully at a forwarded message"></div>
+        <h1 class="intro-challenge">Can you build a checker<br>this parent can <span>trust?</span></h1>
+        <article class="intro-notification" aria-labelledby="notification-title">
+          <header><span>↪ <em>Forwarded</em></span><button id="dismiss-notification" type="button" aria-label="Dismiss notification">×</button></header>
+          <div class="notification-body"><div><h1 id="notification-title">School closed today</h1><p>Heavy rain is expected. Classes are closed today. Please check the school notice page for updates.</p></div><img src="assets/icons/icon_school_rain_3d.png" alt="School in heavy rain"></div>
+          <footer>6:40 AM</footer>
+        </article>
+        <button id="reopen-notification" class="secondary-cta" type="button" hidden>Read the notification</button>
+        <div class="intro-next"><button class="primary-cta" id="start-game" type="button">Let’s build <span aria-hidden="true">→</span></button></div>
       </section>`;
+    onTap('#dismiss-notification', () => {
+      stage.querySelector('.intro-notification').hidden = true;
+      stage.querySelector('#reopen-notification').hidden = false;
+      stage.querySelector('#reopen-notification').focus();
+    });
+    onTap('#reopen-notification', () => {
+      stage.querySelector('.intro-notification').hidden = false;
+      stage.querySelector('#reopen-notification').hidden = true;
+      stage.querySelector('#dismiss-notification').focus();
+    });
     onTap('#start-game', () => {
       tone('tap');
       setView('tutorial', renderTutorial);
@@ -560,16 +620,15 @@
   function renderTutorial() {
     stage.innerHTML = `
       <section class="screen tutorial">
-        <h1 class="screen-heading">We check 4 things.</h1>
+        <h1 class="screen-heading">4 CLUES. ONE CHECKER.</h1>
         <p class="screen-support">Each clue asks one question about a message.</p>
-        <div class="clue-grid">${CLUES.map(clue => clueCardMarkup(clue)).join('')}</div>
-        <img class="character right small" src="assets/characters/guide_smiling_neutral.png" alt="The guide smiling">
-        <button class="primary-cta bottom-cta" id="tutorial-next" type="button">Next</button>
+        <div class="clue-grid">${CLUES.map((clue, index) => `<button class="clue-card" type="button" data-clue="${clue.id}" aria-pressed="false"><span class="tutorial-art"><img src="assets/icons/clue_${clue.id}_reference.png" alt=""></span><span class="tutorial-copy"><strong>${['Source','Date','Reused Image','Urgent Wording'][index]}</strong><small>${['Is there a real source?','Is it current?','Has this image appeared before?','Is it pushing you to act fast?'][index]}</small></span></button>`).join('')}</div>
+        <button class="primary-cta bottom-cta" id="tutorial-next" type="button">Next: Give each clue its weight <span aria-hidden="true">→</span></button>
       </section>`;
     stage.querySelectorAll('.clue-card').forEach(card => {
       card.addEventListener('click', () => {
         tone('tap');
-        stage.querySelectorAll('.clue-card').forEach(el => el.classList.toggle('selected', el === card));
+        stage.querySelectorAll('.clue-card').forEach(el => { el.classList.toggle('selected', el === card); el.setAttribute('aria-pressed', String(el === card)); });
       });
     });
     onTap('#tutorial-next', () => {
@@ -580,128 +639,101 @@
 
   // ---------- Ranking and checker style ----------
 
-  function availableClues() {
-    return CLUES.filter(clue => !state.clueOrder.includes(clue.id));
-  }
-
-  function placeClue(clueId, slotIndex) {
-    if (!clueById(clueId) || !Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex > 3) return;
-    const previousIndex = state.clueOrder.indexOf(clueId);
-    const displaced = state.clueOrder[slotIndex];
-    if (previousIndex >= 0) state.clueOrder[previousIndex] = displaced || null;
-    state.clueOrder[slotIndex] = clueId;
-    state.selectedClue = null;
-    tone('drop');
-    renderRanking();
-  }
-
   function starRowMarkup(count) {
     return `<span class="mini-stars" aria-hidden="true">${'★'.repeat(count)}</span>`;
   }
 
   function renderRanking() {
-    const pool = availableClues();
-    const complete = state.clueOrder.every(Boolean);
-    const support = state.selectedClue
-      ? `Now tap a numbered slot for ${clueById(state.selectedClue).label}.`
-      : 'Drag each clue—or tap it, then tap a numbered slot. Tap a placed clue to move it.';
+    const used = CLUES.reduce((sum, clue) => sum + (state.weights[clue.id] || 0), 0);
+    const remaining = TOTAL_STARS - used;
+    const complete = remaining === 0 && CLUES.every(clue => state.weights[clue.id] >= MIN_STARS);
     stage.innerHTML = `
-      <section class="screen ranking">
-        <h1 class="screen-heading">Which clues matter most?</h1>
-        <p class="screen-support">${support}</p>
-        <div class="ranking-layout">
-          <div class="clue-grid rank-pool ${pool.length ? '' : 'complete'}">
-            ${pool.length ? pool.map(clue => clueCardMarkup(clue, { draggable: true, selected: state.selectedClue === clue.id })).join('') : '<p class="screen-support">Your first rule is ready. Higher clues get more stars.</p>'}
-          </div>
-          <div class="rank-slots" aria-label="Clue importance ranking">
-            <span class="rail-label more">MATTERS MORE</span><span class="rail-label less">MATTERS LESS</span>
-            ${state.clueOrder.map((id, index) => {
-              const clue = id ? clueById(id) : null;
-              const weight = 4 - index;
-              return `<button class="rank-slot ${clue ? 'filled' : ''} ${state.selectedClue ? 'awaiting' : ''}" type="button" data-slot="${index}" aria-label="Slot ${index + 1}${clue ? `: ${clue.label}, ${stars(weight)}` : ', empty'}">
-                <span class="rank-number">${index + 1}</span>
-                ${clue ? `<img src="${clue.icon}" alt=""><strong>${clue.label}</strong>` : '<strong class="slot-empty">Place a clue</strong>'}
-                <em>${starRowMarkup(weight)} ${stars(weight)}</em>
-              </button>`;
-            }).join('')}
-          </div>
+      <section class="screen ranking allocation-screen">
+        <h1 class="screen-heading">HOW MUCH SHOULD EACH CLUE COUNT?</h1>
+        <p class="screen-support">Share 20 points across the four clues. Give each clue 1–10 points.</p>
+        <div class="allocation-grid">
+          ${CLUES.map((clue, i) => {
+            const value = state.weights[clue.id] || 0;
+            const label = ['Source','Date','Reused Image','Urgent Wording'][i];
+            return `<article class="allocation-card" data-allocation="${clue.id}">
+              <div class="allocation-art"><img src="assets/icons/clue_${clue.id}_reference.png" alt=""><h2>${label}</h2></div>
+              <div class="allocation-controls">
+                <div class="allocation-stepper"><button type="button" data-change="-1" data-id="${clue.id}" aria-label="Remove one point from ${label}" ${value === 0 ? 'disabled' : ''}>−</button><output aria-label="${label} points">${value}</output><button type="button" data-change="1" data-id="${clue.id}" aria-label="Add one point to ${label}" ${remaining === 0 || value >= MAX_STARS ? 'disabled' : ''}>+</button></div>
+                <div class="allocation-dots" aria-hidden="true">${Array.from({length: MAX_STARS},(_,n)=>`<i class="${n<value?'filled':''}"></i>`).join('')}</div>
+              </div>
+            </article>`;
+          }).join('')}
         </div>
-        <button class="primary-cta bottom-cta" id="ranking-next" type="button" ${complete ? '' : 'disabled'}>Next</button>
+        <div class="allocation-bank"><div class="bank-coins" aria-hidden="true">${Array.from({length:TOTAL_STARS},(_,n)=>`<i class="${n<remaining?'available':'spent'}"></i>`).join('')}</div><p role="status">${remaining ? `${remaining} points left to share` : complete ? 'All 20 points assigned. Your rule is ready!' : 'Give every clue at least 1 point to continue.'}</p></div>
+        <button class="primary-cta bottom-cta" id="ranking-next" type="button" ${complete?'':'disabled'}>Set checking thresholds <span aria-hidden="true">→</span></button>
       </section>`;
-
-    stage.querySelectorAll('.rank-pool .clue-card').forEach(card => {
-      card.addEventListener('click', () => {
-        state.selectedClue = state.selectedClue === card.dataset.clue ? null : card.dataset.clue;
-        tone('tap');
-        renderRanking();
-      });
-      card.addEventListener('dragstart', event => {
-        event.dataTransfer.setData('text/plain', card.dataset.clue);
-        card.classList.add('dragging');
-      });
-      card.addEventListener('dragend', () => card.classList.remove('dragging'));
-    });
-    stage.querySelectorAll('.rank-slot').forEach(slot => {
-      const slotIndex = Number(slot.dataset.slot);
-      slot.addEventListener('click', () => {
-        if (state.selectedClue) placeClue(state.selectedClue, slotIndex);
-        else if (state.clueOrder[slotIndex]) {
-          state.selectedClue = state.clueOrder[slotIndex];
-          state.clueOrder[slotIndex] = null;
-          tone('tap');
-          renderRanking();
-        }
-      });
-      slot.addEventListener('dragover', event => { event.preventDefault(); slot.classList.add('over'); });
-      slot.addEventListener('dragleave', () => slot.classList.remove('over'));
-      slot.addEventListener('drop', event => {
-        event.preventDefault();
-        placeClue(event.dataTransfer.getData('text/plain'), slotIndex);
-      });
-    });
+    stage.querySelectorAll('[data-change]').forEach(button => button.addEventListener('click', () => {
+      const id=button.dataset.id, delta=Number(button.dataset.change);
+      const value=state.weights[id]||0;
+      if (value+delta<0 || value+delta>MAX_STARS || (delta>0 && remaining===0)) return;
+      state.weights[id]=value+delta;
+      tone('drop');
+      renderRanking();
+      const next=stage.querySelector(`[data-id="${id}"][data-change="${delta}"]`);
+      (next.disabled ? stage.querySelector(`[data-id="${id}"][data-change="${-delta}"]`) : next).focus();
+    }));
     onTap('#ranking-next', () => {
-      state.weights = Object.fromEntries(state.clueOrder.map((id, index) => [id, 4 - index]));
+      if (!complete) return;
+      state.clueOrder = CLUES.map(clue=>clue.id).sort((a,b)=>state.weights[b]-state.weights[a]);
       tone('correct');
-      setView('style', renderStyle);
+      state.currentMessageIndex=0;
+      state.testResults=[];
+      setView('sensitivity',renderSensitivity);
     });
   }
 
-  function styleRuleCopy(style) {
-    return `Closer look at ${style.green}★ · Suspicious at ${style.red}★`;
-  }
-
-  function renderStyle() {
-    stage.innerHTML = `
-      <section class="screen checker-style">
-        <h1 class="screen-heading">How careful should our checker be?</h1>
-        <p class="screen-support">Each message gets a risk score: the stars of every clue with a problem.</p>
-        <div class="style-grid">
-          ${STYLES.map(item => `<button class="style-card ${state.checkerStyle === item.id ? 'selected' : ''}" type="button" data-style="${item.id}" aria-pressed="${state.checkerStyle === item.id}" aria-label="${item.label}: ${styleRuleCopy(item)}"><img src="${item.asset}" alt=""><span class="style-rule">${styleRuleCopy(item)}</span></button>`).join('')}
-        </div>
-        <img class="character left small" src="assets/characters/guide_pointing_right.png" alt="The guide pointing to the options">
-        <button class="primary-cta bottom-cta" id="style-next" type="button" ${state.checkerStyle ? '' : 'disabled'}>Use this rule</button>
-      </section>`;
-    stage.querySelectorAll('.style-card').forEach(card => {
-      card.addEventListener('click', () => {
-        state.checkerStyle = card.dataset.style;
-        tone('drop');
-        renderStyle();
-        stage.querySelector(`[data-style="${card.dataset.style}"]`)?.focus();
-      });
-    });
-    onTap('#style-next', () => {
-      state.currentMessageIndex = 0;
-      state.testResults = [];
-      tone('correct');
-      setView('test', renderTest);
-    });
-  }
 
   // ---------- Rule engine ----------
 
   function thresholds() {
-    const style = styleById(state.checkerStyle) || styleById('balanced');
-    return { green: style.green, red: style.red };
+    return { green: state.reviewThreshold, red: state.suspiciousThreshold };
+  }
+
+  function renderSensitivity() {
+    const labels = ['Source','Date','Reused image','Urgent wording'];
+    const sample = window.MESSAGE_DATA.find(m => m.issues.image) || window.MESSAGE_DATA[0];
+    const result = computeResult(sample);
+    stage.innerHTML = `<section class="screen sensitivity-screen">
+      <h1 class="screen-heading">How careful should our checker be?</h1>
+      <p class="screen-support">Set when a message needs review or looks suspicious.</p>
+      <div class="sensitivity-example">
+        <div class="example-message"><h2>Example message</h2><div><img src="${sample.illustration}" alt=""><p><strong>${escapeHtml(sample.title)}</strong><span>${escapeHtml(sample.body)}</span></p></div></div>
+        <div class="example-clues"><h2>Risk score from clues</h2><div class="example-clue-grid">${CLUES.map((c,i)=>`<article><img src="assets/icons/clue_${c.id}_reference.png" alt=""><strong>${labels[i]}</strong><b>${sample.issues[c.id] ? state.weights[c.id] : 0}</b><small>/ ${state.weights[c.id]} points</small></article>`).join('')}</div></div>
+        <div class="example-total"><strong>Total risk score</strong><b>${result.score}</b><span>out of ${TOTAL_STARS}</span><em id="example-verdict" aria-live="polite"></em></div>
+      </div>
+      <div class="threshold-panel">
+        <div class="threshold-spectrum" aria-hidden="true"><span>0</span><div id="threshold-colors"></div><span>20</span></div>
+        <div class="threshold-controls"><label for="review-threshold">Review starts at <output id="review-value"></output><input id="review-threshold" type="range" min="1" max="19" value="${state.reviewThreshold}"></label><label for="suspicious-threshold">Suspicious starts at <output id="suspicious-value"></output><input id="suspicious-threshold" type="range" min="2" max="20" value="${state.suspiciousThreshold}"></label></div>
+        <div class="threshold-legend"><div><strong>LIKELY OKAY</strong><span id="trust-range"></span></div><div><strong>REVIEW</strong><span id="review-range"></span></div><div><strong>SUSPICIOUS</strong><span id="suspicious-range"></span></div></div>
+      </div>
+      <button class="primary-cta bottom-cta" id="sensitivity-next" type="button">Use these settings →</button>
+    </section>`;
+    const update = () => {
+      const {green,red}=thresholds();
+      stage.querySelector('#review-threshold').value=green;
+      stage.querySelector('#review-threshold').max=red-1;
+      stage.querySelector('#suspicious-threshold').value=red;
+      stage.querySelector('#suspicious-threshold').min=green+1;
+      stage.querySelector('#review-value').textContent=green;
+      stage.querySelector('#suspicious-value').textContent=red;
+      stage.querySelector('#trust-range').textContent=`Score below ${green}`;
+      stage.querySelector('#review-range').textContent=`Score ${green}–${red-1}`;
+      stage.querySelector('#suspicious-range').textContent=`Score ${red} or more`;
+      stage.querySelector('#threshold-colors').style.background=`linear-gradient(90deg,#49ce78 0 ${green/20*100}%,#ffcf43 ${green/20*100}% ${red/20*100}%,#ff656b ${red/20*100}% 100%)`;
+      const status=computeResult(sample).status;
+      const verdict=stage.querySelector('#example-verdict');
+      verdict.textContent={green:'LIKELY OKAY',amber:'REVIEW',red:'SUSPICIOUS'}[status];
+      verdict.className=status;
+    };
+    stage.querySelector('#review-threshold').addEventListener('input',event=>{state.reviewThreshold=Math.max(1,Math.min(Number(event.target.value),state.suspiciousThreshold-1));update();});
+    stage.querySelector('#suspicious-threshold').addEventListener('input',event=>{state.suspiciousThreshold=Math.min(20,Math.max(Number(event.target.value),state.reviewThreshold+1));update();});
+    update();
+    onTap('#sensitivity-next',()=>{tone('tap');setView('test',renderTest);});
   }
 
   function computeResult(message, weights = state.weights) {
@@ -759,14 +791,20 @@
   // ---------- Test run ----------
 
   function scanTileMarkup(clue) {
-    return `<div class="scan-tile" data-scan="${clue.id}"><img src="${clue.icon}" alt=""><strong>${clue.label}</strong><span class="scan-weight">${starRowMarkup(state.weights[clue.id])}</span><span class="scan-state">?</span></div>`;
+    const done = state.view === 'result';
+    const issue = currentMessage().issues[clue.id];
+    const weight = state.weights[clue.id];
+    const label = {source:'Source',date:'Date',image:'Reused image',urgent:'Urgent wording'}[clue.id];
+    return `<tr class="rule-row ${done ? issue ? 'issue' : 'safe' : ''}" data-scan="${clue.id}"><th scope="row"><img src="assets/icons/clue_${clue.id}_reference.png" alt=""><span>${label}</span></th><td><span class="rule-coins" aria-hidden="true">${Array.from({length:weight},()=>'<i></i>').join('')}</span><span class="rule-weight">${weight} points</span></td><td><span class="scan-state" aria-label="${label} contribution">${done ? issue ? `+${weight}` : '0' : '—'}</span></td></tr>`;
   }
 
   function renderTest() {
     const message = currentMessage();
+    const done = state.view === 'result';
+    const result = done ? state.currentResult : null;
     stage.innerHTML = `
       <section class="screen test-screen">
-        <h1 class="screen-heading">Check this message</h1>
+        <h1 class="screen-heading">Run the checker</h1>
         <p class="screen-support"><strong>${escapeHtml(activePlayerName())}</strong>, lead message ${state.currentMessageIndex + 1} of ${window.MESSAGE_DATA.length}.</p>
         <div class="test-layout">
           <div class="phone-stage"><div class="gameplay-phone">
@@ -774,19 +812,20 @@
           <article class="live-message phone-display" aria-label="Incoming message on phone">
             <header class="message-topline"><span class="chat-avatar" aria-hidden="true">↗</span><div><strong>Forwarded message</strong><small>Read it. Question it. Check it.</small></div><span class="message-counter">${state.currentMessageIndex + 1} / ${window.MESSAGE_DATA.length}</span></header>
             <div class="message-content"><div class="message-copy"><span class="message-eyebrow">INCOMING MESSAGE</span><h2>${escapeHtml(message.title)}</h2><p>${escapeHtml(message.body)}</p></div><div class="message-art"><img src="${message.illustration}" alt="Illustration accompanying the message"></div></div>
-            <footer class="message-footer">A forward is a claim. Look at all four clues before deciding.</footer>
+            <footer class="message-footer">Your rule: ${thresholds().green} points → review · ${thresholds().red} or more → suspicious</footer>
           </article>
           </div></div>
-          <div class="scan-side">
-            <div class="scan-heading"><span>YOUR CHECKLIST</span><strong>Inspect the evidence</strong></div>
-            <div class="scan-grid">${CLUES.map(scanTileMarkup).join('')}</div>
+          <div class="scan-side rule-workspace">
+            <div class="rule-heading"><h2>YOUR RULE</h2><span>Total = ${TOTAL_STARS} points</span></div>
+            <table class="rule-table"><thead><tr><th>Check</th><th>Your weight</th><th>Message score</th></tr></thead><tbody>${CLUES.map(scanTileMarkup).join('')}</tbody></table>
+            <div class="rule-summary" aria-live="polite"><strong>Risk score</strong><div class="risk-total">${done ? `<b>${result.score}</b> / ${TOTAL_STARS}<small>${CLUES.filter(c=>message.issues[c.id]).map(c=>state.weights[c.id]).join(' + ') || '0'} = ${result.score}</small>` : `<b>—</b> / ${TOTAL_STARS}<small>Run all four checks</small>`}</div><div class="risk-verdict ${done ? result.status : ''}">${done ? {green:'LIKELY OKAY',amber:'REVIEW',red:'SUSPICIOUS'}[result.status] : 'READY TO CHECK'}</div></div>
             <div class="checker-bar">
-              <button class="primary-cta" id="check-message" type="button">Check</button>
+              ${done ? `<button class="primary-cta" id="result-next" type="button">${state.currentMessageIndex === window.MESSAGE_DATA.length-1 ? 'See the batch' : 'Next message'} →</button>` : '<button class="primary-cta" id="check-message" type="button">Check message →</button>'}
             </div>
           </div>
         </div>
       </section>`;
-    stage.querySelector('#check-message').addEventListener('click', runScan, { once: true });
+    if (!done) stage.querySelector('#check-message').addEventListener('click', runScan, { once: true });
   }
 
   function runScan() {
@@ -796,22 +835,72 @@
     const message = currentMessage();
     const result = computeResult(message);
     state.currentResult = result;
+    const phone = stage.querySelector('.phone-display');
+    const content = phone.querySelector('.message-content');
+    phone.classList.add('is-scanning');
+    phone.setAttribute('aria-busy', 'true');
+    phone.scrollTop = 0;
+    const scanNote = document.createElement('div');
+    scanNote.className = 'phone-scan-status';
+    scanNote.setAttribute('role', 'status');
+    scanNote.textContent = 'Scanning message…';
+    phone.querySelector('.message-topline').after(scanNote);
+    const phrases = {
+      source: /school notice page|official forecast|official school page|no source or evidence|Doctors do not want you to know|You won!/gi,
+      date: /today|after 6 PM|8:00 AM|last year|4:30 PM|this week/gi,
+      image: /dramatic photo|shared again/gi,
+      urgent: /closed today|next 5 minutes|given away|Strong winds|Share now/gi
+    };
+    const highlight = clue => {
+      phone.dataset.scanClue = clue.id;
+      scanNote.textContent = `Checking ${clue.label.toLowerCase()}…`;
+      content.querySelectorAll('mark').forEach(mark => mark.classList.remove('scan-word-active'));
+      for (const el of content.querySelectorAll('.message-copy h2, .message-copy p')) {
+        // Only transform text nodes; never interpret message text as HTML.
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        while (walker.nextNode()) if (walker.currentNode.parentElement.tagName !== 'MARK') nodes.push(walker.currentNode);
+        for (const node of nodes) {
+          const text = node.textContent;
+          const matches = [...text.matchAll(phrases[clue.id])];
+          if (!matches.length) continue;
+          const fragment = document.createDocumentFragment();
+          let offset = 0;
+          for (const match of matches) {
+            fragment.append(text.slice(offset, match.index));
+            const mark = document.createElement('mark');
+            mark.className = 'scan-word scan-word-active';
+            mark.textContent = match[0];
+            fragment.append(mark);
+            offset = match.index + match[0].length;
+          }
+          fragment.append(text.slice(offset));
+          node.replaceWith(fragment);
+        }
+      }
+    };
     CLUES.forEach((clue, index) => {
+      scanLater(() => highlight(clue), 650 * index);
       scanLater(() => {
         const tile = stage.querySelector(`[data-scan="${clue.id}"]`);
         if (!tile) return;
         const hasIssue = message.issues[clue.id];
         const weight = state.weights[clue.id];
-        tile.classList.add(hasIssue ? (weight >= 3 ? 'issue' : 'warn') : 'safe');
-        tile.querySelector('.scan-state').textContent = hasIssue ? `+${weight}` : '✓';
+        tile.classList.add(hasIssue ? 'issue' : 'safe');
+        tile.querySelector('.scan-state').textContent = hasIssue ? `+${weight}` : '0';
         tone('light');
-      }, 330 * (index + 1));
+      }, 650 * index + 500);
     });
     scanLater(() => {
-      state.testResults.push(result);
+      state.testResults[state.currentMessageIndex] = result;
+      state.testResults.length = state.currentMessageIndex + 1;
+      phone.classList.remove('is-scanning');
+      phone.classList.add('scan-complete');
+      phone.setAttribute('aria-busy', 'false');
+      scanNote.textContent = 'All four clues checked';
       tone(result.status === 'green' ? 'correct' : result.status === 'red' ? 'wrong' : 'drop');
       scanLater(() => setView('result', renderResult), 650);
-    }, 330 * 5);
+    }, 2750);
   }
 
   function renderResult() {
@@ -819,20 +908,7 @@
     const result = state.currentResult;
     const copy = resultCopy(result.status);
     const finalMessage = state.currentMessageIndex === window.MESSAGE_DATA.length - 1;
-    stage.innerHTML = `
-      <section class="screen result-screen">
-        <h1 class="screen-heading">Here’s what your rule decided</h1>
-        <div class="panel result-layout">
-          <div class="result-head ${result.status}"><span class="result-icon">${copy.icon}</span><h2>${copy.headline}</h2></div>
-          ${scoreMeterMarkup(result.score)}
-          <p class="result-reason">${explainResult(message, result)}</p>
-          <div class="result-clues">
-            ${CLUES.map(clue => `<div class="result-clue ${message.issues[clue.id] ? 'issue' : ''}"><img src="${clue.icon}" alt=""><strong>${clue.label}</strong><span>${message.issues[clue.id] ? `+${stars(state.weights[clue.id])}` : 'Looks okay'}</span></div>`).join('')}
-          </div>
-        </div>
-        <img class="character right small" src="assets/characters/guide_pointing_right.png" alt="The guide pointing at the result">
-        <button class="primary-cta bottom-cta" id="result-next" type="button">${finalMessage ? 'See the batch' : 'Next message'}</button>
-      </section>`;
+    renderTest();
     onTap('#result-next', () => {
       tone('tap');
       if (finalMessage) {
@@ -1253,8 +1329,10 @@
   // ---------- Settings, restart and boot ----------
 
   function openSettings() {
-    if (state.finished) return;
+    if (state.finished || !document.querySelector('#turn-modal').hidden) return;
+    toggleSoundMenu(false);
     settingsModal.hidden = false;
+    stage.inert = true;
     settingsModal.querySelector('#music-button').textContent = `Music: ${state.musicOn ? 'On' : 'Off'}`;
     settingsModal.querySelector('#sfx-button').textContent = `Sound effects: ${state.sfxOn ? 'On' : 'Off'}`;
     setTimeout(() => settingsModal.querySelector('#resume-button').focus(), 0);
@@ -1262,10 +1340,13 @@
 
   function closeSettings() {
     settingsModal.hidden = true;
+    stage.inert = transitioning || Boolean(document.querySelector('.modal:not([hidden])'));
     skaiInfo.focus();
   }
 
   function restartGame() {
+    toggleSoundMenu(false);
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     document.querySelector('#turn-modal').hidden = true;
     stopMissionClock();
     scanTimers.forEach(clearTimeout);
@@ -1273,6 +1354,8 @@
     clearTimeout(toastTimer);
     toastEl.classList.remove('show');
     state = freshState({ soundOn: state.soundOn, musicOn: state.musicOn, sfxOn: state.sfxOn });
+    screenHistory = [];
+    currentScreen = null;
     settingsModal.hidden = true;
     recapModal.hidden = true;
     updateSoundButton();
@@ -1282,24 +1365,51 @@
 
   function updateSoundButton() {
     skaiSound.classList.toggle('muted', !state.soundOn);
-    skaiSound.setAttribute('aria-pressed', String(!state.soundOn));
-    skaiSound.setAttribute('aria-label', state.soundOn ? 'Mute sound' : 'Turn sound on');
+    skaiSound.setAttribute('aria-label', state.soundOn ? 'Sound options' : 'Sound options (muted)');
+    document.querySelector('#sound-mute-label').innerHTML = state.soundOn ? 'Mute All<br>Sounds' : 'Turn Sounds<br>On';
   }
 
-  // Back gear: steps back through setup; during the mission it opens the menu (resume / restart).
+  // ---------- Sound menu (Figma 557:2877): replay narration / mute all ----------
+  const soundMenu = document.querySelector('#sound-menu');
+
+  function toggleSoundMenu(open = soundMenu.hidden) {
+    soundMenu.hidden = !open;
+    skaiSound.setAttribute('aria-expanded', String(open));
+    if (open) soundMenu.querySelector('.sound-menu-item')?.focus();
+  }
+
+  // Reads the current screen's title and instruction aloud with the browser's speech voice.
+  function replayNarration() {
+    if (!('speechSynthesis' in window)) {
+      showToast('Narration is not available in this browser.');
+      return;
+    }
+    if (!state.soundOn) {
+      showToast('Sounds are muted. Turn them on to hear the narration.');
+      return;
+    }
+    const parts = [...stage.querySelectorAll('h1, .screen-support, .skai-footnote')]
+      .map(element => element.textContent.trim())
+      .filter(Boolean);
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(parts.join('. ') || 'Follow the instructions on the screen.');
+    utterance.rate = .95;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  // Back tab: always returns to the previous screen.
   function onBackGear() {
-    if (state.view === 'setup') setupBack();
-    else openSettings();
+    goBack();
   }
 
   const GAME_HINTS = {
     roles: 'Pass the device to the player marked LEAD whenever the job changes.',
     intro: 'Tap the button to start building your checker.',
     tutorial: 'Tap each clue card to read the question it asks.',
-    ranking: 'Put the clue you trust most in slot 1. Tap a clue, then tap a slot.',
-    style: 'Careful sends more messages for a closer look. Strict flags more as suspicious.',
+    ranking: 'Use + and − to share 20 points. Give every clue at least 1 and at most 10 points.',
     test: 'Tap Check. Every clue with a problem adds its stars to the risk score.',
-    result: 'The meter shows where this score landed against your checker style.',
+    result: 'Compare the total score with the review and suspicious thresholds your team chose.',
+    sensitivity: 'Move the sliders to choose when review and suspicious begin. The review threshold must stay below suspicious.',
     batch: 'A miss is a fake that passed as okay. A false alarm is real news flagged red.',
     cause: 'Pick a clue that shows a problem in this message.',
     adjust: 'Look for a card marked “Safe move” before you move a star.',
@@ -1318,6 +1428,7 @@
 
   function toggleSound() {
     state.soundOn = !state.soundOn;
+    if (!state.soundOn && 'speechSynthesis' in window) window.speechSynthesis.cancel();
     updateSoundButton();
     updateMusicLoop();
     if (state.soundOn) tone('tap');
@@ -1337,7 +1448,18 @@
   });
   settingsModal.querySelector('#restart-button').addEventListener('click', restartGame);
 
-  skaiSound.addEventListener('click', toggleSound);
+  skaiSound.addEventListener('click', () => toggleSoundMenu());
+  document.querySelector('#sound-replay').addEventListener('click', () => { toggleSoundMenu(false); replayNarration(); });
+  document.querySelector('#sound-mute').addEventListener('click', () => { toggleSoundMenu(false); toggleSound(); });
+  document.addEventListener('pointerdown', event => {
+    if (!soundMenu.hidden && !soundMenu.contains(event.target) && !skaiSound.contains(event.target)) toggleSoundMenu(false);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !soundMenu.hidden) {
+      toggleSoundMenu(false);
+      skaiSound.focus();
+    }
+  });
   skaiInfo.addEventListener('click', openSettings);
   skaiBack.addEventListener('click', onBackGear);
   document.querySelector('#skai-hint').addEventListener('click', onHintGear);
@@ -1346,6 +1468,16 @@
   });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && !settingsModal.hidden) closeSettings();
+    if (event.key !== 'Tab') return;
+    const modal = document.querySelector('.modal:not([hidden])');
+    if (!modal) return;
+    const focusable = [...modal.querySelectorAll('button:not(:disabled), [href], input:not(:disabled), [tabindex="0"]')].filter(el => el.getClientRects().length);
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (!first) return;
+    if (!modal.contains(document.activeElement) || (event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    }
   });
 
   function preload() {
@@ -1365,15 +1497,16 @@
     Promise.race([Promise.all(tasks), new Promise(resolve => setTimeout(resolve, 2200))]).then(() => {
       loadingEl.classList.add('hidden');
       setTimeout(() => loadingEl.remove(), 450);
-      renderProgress();
       renderSetup();
+      currentScreen = { view: 'setup', renderFn: renderSetup, snapshot: snapshot() };
+      renderProgress();
     });
   }
 
   // ---------- DEV MENU HOOK — only used by dev/dev-menu.js. Delete this block along with the dev/ folder. ----------
   window.CheckerDev = {
     get state() { return state; },
-    views: { setup: renderSetup, roles: renderRoles, intro: renderIntro, tutorial: renderTutorial, ranking: renderRanking, style: renderStyle, test: renderTest, result: renderResult, batch: renderBatch, cause: renderCause, adjust: renderAdjust, retest: renderRetest, final: renderFinal },
+    views: { setup: renderSetup, roles: renderRoles, intro: renderIntro, tutorial: renderTutorial, ranking: renderRanking, sensitivity: renderSensitivity, test: renderTest, result: renderResult, batch: renderBatch, cause: renderCause, adjust: renderAdjust, retest: renderRetest, final: renderFinal },
     go: (view, renderFn) => setView(view, renderFn, { force: true }),
     computeResult,
     findMistakes,
