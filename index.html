@@ -95,11 +95,10 @@
     <div id="turn-modal" class="modal" hidden>
       <div class="modal-card turn-dialog" role="dialog" aria-modal="true" aria-labelledby="turn-title">
         <span class="turn-kicker">PASS THE DEVICE</span>
-        <h2 id="turn-title"></h2>
-        <strong id="turn-role"></strong>
-        <p id="turn-task"></p>
-        <p class="turn-team-note">Everyone can discuss the evidence. The named player controls this step.</p>
-        <button class="menu-button primary" id="turn-ready" type="button">I'm ready</button>
+        <div class="turn-layout">
+          <div class="turn-identity"><div id="turn-avatar"></div><div class="turn-nameplate"><strong id="turn-name"></strong><span id="turn-role"></span></div></div>
+          <div class="turn-content"><h2 id="turn-title"></h2><p id="turn-task"></p><div id="turn-art" aria-hidden="true"></div><p class="turn-team-note">Talk it through with your team. This player controls the next step.</p><button class="menu-button primary" id="turn-ready" type="button">I’m ready <span aria-hidden="true">→</span></button></div>
+        </div>
       </div>
     </div>
     <div id="loading" class="loading">

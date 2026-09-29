@@ -1480,3 +1480,55 @@ body { background: #3f3f3f; }
 
 /* CTAs appear only when needed (beats per-screen rules that force disabled buttons visible). */
 #game-shell #stage .bottom-cta:disabled, #game-shell #stage .skai-cta:disabled { visibility: hidden; }
+
+/* Preserve the SKAI plate's native proportions in every layout. */
+#game-shell #stage .primary-cta,
+#game-shell #stage .secondary-cta,
+#game-shell #stage .secondary-cta.small-cta,
+#game-shell #stage .skai-cta,
+#game-shell #stage .intro-next .primary-cta,
+#game-shell #stage .test-screen .checker-bar .primary-cta,
+#game-shell #stage .test-screen .rule-workspace .primary-cta,
+#game-shell #stage .bottom-actions .secondary-cta.small-cta,
+#game-shell .menu-button {
+  box-sizing: border-box;
+  width: calc(475.725 * var(--u));
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 475.725 / 135.125;
+  flex: 0 0 auto;
+  align-self: center;
+  padding: calc(24 * var(--u)) calc(45 * var(--u)) calc(12 * var(--u));
+  white-space: normal;
+  line-height: 1.12;
+}
+#game-shell #stage .test-screen .rule-workspace .primary-cta,
+#game-shell #stage .test-screen .checker-bar .primary-cta { justify-self: end; }
+#game-shell .menu-button { display: block; margin-left: auto; margin-right: auto; }
+
+/* Shared player/role handoff, over the unchanged mission scene. */
+#turn-modal { background: #111c32a8; backdrop-filter: blur(6px); }
+#turn-modal .turn-dialog { width: min(1120px,86vw); max-height: 90vh; overflow-y: auto; padding: clamp(20px,3vw,42px); border: 2px solid #fff; border-radius: 38px; background: #fffdfa; color: #102c53; box-shadow: 0 24px 70px #07192f40; text-align: center; }
+#turn-modal .turn-kicker { display: table; margin: 0 auto 22px; padding: 7px 35px; border-radius: 999px; background: #e0efff; color: #123e76; font: 800 clamp(13px,1.5vw,22px)/1.2 'Segoe UI',sans-serif; letter-spacing: .05em; }
+.turn-layout { display: grid; grid-template-columns: 30% minmax(0,1fr); gap: 32px; align-items: center; }
+.turn-identity { padding-right: 28px; border-right: 2px solid #e8edf2; min-width: 0; }
+#turn-avatar { width: min(100%,250px); aspect-ratio: 1; margin: 0 auto 14px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb,var(--turn-accent) 20%,white); }
+#turn-avatar .turn-avatar { display: block; width: 94%; height: 94%; }
+.turn-nameplate { padding: 10px; border-radius: 25px; background: color-mix(in srgb,var(--turn-accent) 12%,white); }
+#turn-name { display: block; font-size: clamp(20px,2.4vw,34px); line-height: 1.2; overflow-wrap: anywhere; }
+#turn-role { display: block; margin-top: 8px; padding: 7px 12px; background: var(--turn-accent); color: white; border-radius: 999px; font-size: clamp(13px,1.4vw,20px); font-weight: 750; }
+#turn-modal h2 { margin: 0 0 15px; color: #102c53; font: 800 clamp(26px,3.4vw,48px)/1.15 'Segoe UI',sans-serif; overflow-wrap: anywhere; }
+#turn-title span { color: var(--turn-accent); }
+#turn-modal #turn-task { font-size: clamp(15px,1.8vw,25px); line-height: 1.4; margin: 0; }
+#turn-art { display: flex; justify-content: center; gap: 12px; margin: 20px 0 10px; }
+.turn-clue { display: grid; place-items: center; width: 23%; aspect-ratio: 1; background: #dcefff; border-radius: 22px; }
+.turn-clue:nth-child(2) { background: #ffe4e7; }.turn-clue:nth-child(3) { background: #e0f3d8; }.turn-clue:nth-child(4) { background: #ffead0; }
+.turn-clue img { width: 90%; height: 90%; object-fit: contain; }
+.turn-task-icon { width: clamp(64px,8vw,115px); height: clamp(64px,8vw,115px); object-fit: contain; }
+#turn-modal .turn-team-note { border: 0; padding: 0; margin: 10px 0 18px; font-size: clamp(13px,1.4vw,19px); color: #375475; }
+#turn-modal #turn-ready { width: 80%; aspect-ratio: auto; margin: 0 auto; padding: 15px 25px; border: 2px solid #edf7ff; border-radius: 999px; background: linear-gradient(120deg,#159aff,#0075f5); color: white; font: 800 clamp(20px,2.3vw,32px)/1.2 'Segoe UI',sans-serif; box-shadow: 0 6px 15px #0879eb25; clip-path: none; }
+#turn-modal[data-task="ranking"] #turn-ready { background: linear-gradient(120deg,#ffe675,#ffd039); color: #102c53; border-color: #fff0b8; }
+@media (max-height: 700px) { #turn-modal .turn-dialog { padding: 20px 26px; } #turn-modal .turn-kicker { margin-bottom: 14px; } #turn-avatar { max-width: 170px; } #turn-art { margin: 12px 0 6px; } .turn-clue { max-width: 90px; } }
+@media (max-width: 650px) { .turn-layout { grid-template-columns: 1fr; gap: 16px; } .turn-identity { border: 0; padding: 0; display: flex; gap: 12px; align-items: center; } #turn-avatar { width: 85px; margin: 0; flex: none; } .turn-nameplate { flex: 1; } }

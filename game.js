@@ -284,7 +284,14 @@
       const tasks = { ranking: 'Share 20 points across the four clues using plus and minus. Discuss each weight; every clue needs 1–10 points.', test: 'Read the message aloud. Ask your team about the four clues, then press Check.', cause: 'Compare the result with the evidence. Choose the clue that caused the mistake.', adjust: 'Listen to the detective, move one star, then ask the tester to retest.', retest: 'Read the new result aloud. Check whether the change helped or created another mistake.' };
       if (tasks[view] && (previousOwner !== state.activePlayerIndex || view === 'ranking')) {
         const modal = document.querySelector('#turn-modal');
-        document.querySelector('#turn-title').textContent = `${activePlayerName()}, your turn`;
+        modal.dataset.task = view;
+        modal.style.setProperty('--turn-accent', ['#008c9b','#d62478','#bd6a08','#7754ba'][state.activePlayerIndex]);
+        document.querySelector('#turn-title').innerHTML = `<span>${escapeHtml(activePlayerName())},</span> your turn`;
+        document.querySelector('#turn-name').textContent = activePlayerName();
+        document.querySelector('#turn-avatar').innerHTML = avatarMarkup(state.avatars[state.activePlayerIndex], 'turn-avatar');
+        document.querySelector('#turn-art').innerHTML = view === 'ranking'
+          ? CLUES.map(clue => `<span class="turn-clue"><img src="${clue.icon}" alt=""></span>`).join('')
+          : `<img class="turn-task-icon" src="assets/icons/role_${({test:'tester',cause:'detective',adjust:'fixer',retest:'tester'})[view]}_v2.png" alt="">`;
         document.querySelector('#turn-role').textContent = teamRoles()[state.activePlayerIndex];
         document.querySelector('#turn-task').textContent = tasks[view];
         modal.hidden = false;
@@ -561,7 +568,7 @@
     const tasks = state.playerCount === 4
       ? ['Share 20 points across the four clues. Then set how carefully the checker checks.', 'Read each message, run its checks, and retest the repaired rule.', 'Find the clue behind each mistake.', 'Move stars to repair the rule.']
       : ['Share 20 points across the four clues. Then set how carefully the checker checks.', 'Read each message, run its checks, and retest the repaired rule.', 'Find each mistake and move stars to repair the rule.'];
-    const roleIcons = ['assets/icons/icon_source_3d.png', 'assets/icons/icon_date_3d.png', 'assets/icons/icon_image_3d.png', 'assets/icons/icon_urgent_words_3d.png'];
+    const roleIcons = ['assets/icons/role_builder_v2.png', 'assets/icons/role_tester_v2.png', 'assets/icons/role_detective_v2.png', 'assets/icons/role_fixer_v2.png'];
     stage.innerHTML = `<section class="screen roles-screen" data-team-size="${state.playerCount}">
       <header class="mission-team-heading"><h1 class="screen-heading">Meet Your Mission Team</h1><p class="screen-support">Everyone has a role. Work together to build and test the checker.</p></header>
       <div class="role-grid">${state.players.map((name, i) => `<article class="panel role-card" style="--role-accent:${['#08b6bf','#ef438f','#ff951b','#8262cf'][i]}">
