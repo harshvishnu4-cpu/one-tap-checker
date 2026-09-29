@@ -17,19 +17,16 @@ Each character variant additionally instructs the generator to preserve the exac
 ## Folder map
 
 - `assets/backgrounds/` — 16:9 room backgrounds
-- `assets/characters/` — separate transparent character and group poses
-- `assets/decor/` — transparent multiplayer, checker-console, and rule-repair illustrations
-- `assets/icons/` — separate 512×512 clue and supporting icons
-- `assets/checker/` — traffic-light states and result labels
-- `assets/ui/` — buttons, cards, progress pieces, and screen-specific reusable panels
-- `assets/messages/` — base card and nine separate educational message examples
-- `assets/results/` — suspicious, real, and review panels
+- `assets/characters/` — the character poses used in the game
+- `assets/decor/` — message illustrations and the phone frame
+- `assets/icons/` — clue icons and prompt notes
+- `assets/messages/` — the eight message cards
 - `assets/badges/` — three achievement badges
-- `assets/weights/` — stars and weighting cards
-- `assets/styles/` — checker style cards and selected variants
-- `assets/_source_refs/` — the four character/background master references used to keep generated poses consistent
+- `assets/weights/` — star icons
+- `assets/skai/` — SKAI setup-screen assets; `assets/skai/v2/` holds the HUD, CTA plates, sound menu and cards from Figma
+- `assets/fonts/` — local Chakra Petch, Fredoka One and Inter fonts
 
-The production folders contain 132 separate PNG deliverables. The five files in `_source_refs` are retained only for future pose generation and are not required at runtime.
+Unused artwork (old buttons, panels, style cards, progress pieces, spare poses and the `_source_refs` masters) was removed on 29 Sep 2026; it can be restored from git history if needed. `scripts/generate-ui-assets.ps1` still recreates the deterministic UI images.
 
 The built-in image generator created five separate transparent 2.5D icons in `assets/icons/`: `icon_source_3d.png`, `icon_date_3d.png`, `icon_image_3d.png`, `icon_urgent_words_3d.png`, and `icon_school_rain_3d.png`. The updated school message card is `assets/messages/message_school_closure_3d.png`. Original artwork is retained. Prompt details are saved in `assets/icons/GENERATED_PROMPTS.md`. The game uses the four new clue icons and the updated school card.
 

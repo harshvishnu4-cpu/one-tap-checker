@@ -46,14 +46,11 @@
   const MISSION_SECONDS = 35 * 60;
 
   const CLUES = [
-    { id: 'source', label: 'Source', icon: 'assets/icons/icon_source_3d.png', tip: 'Who sent it?' },
-    { id: 'date', label: 'Date', icon: 'assets/icons/icon_date_3d.png', tip: 'Is it current?' },
-    { id: 'image', label: 'Image', icon: 'assets/icons/icon_image_3d.png', tip: 'Is the picture reused?' },
-    { id: 'urgent', label: 'Urgent Words', icon: 'assets/icons/icon_urgent_words_3d.png', tip: 'Is it pushing you to act fast?' }
+    { id: 'source', label: 'Source', icon: 'assets/icons/clue_source_reference.png', tip: 'Who sent it?' },
+    { id: 'date', label: 'Date', icon: 'assets/icons/clue_date_reference.png', tip: 'Is it current?' },
+    { id: 'image', label: 'Image', icon: 'assets/icons/clue_image_reference.png', tip: 'Is the picture reused?' },
+    { id: 'urgent', label: 'Urgent Words', icon: 'assets/icons/clue_urgent_reference.png', tip: 'Is it pushing you to act fast?' }
   ];
-
-  // green: scores below this stay "Likely okay". red: scores at or above this are "Suspicious".
-  const STRICT_RULE = Object.freeze({ green: 6, red: 8 });
 
   const TOTAL_STARS = 20;
   const MIN_STARS = 1;
@@ -125,7 +122,6 @@
   const clueById = id => CLUES.find(clue => clue.id === id);
   const messageById = id => window.MESSAGE_DATA.find(message => message.id === id);
   const currentMessage = () => window.MESSAGE_DATA[state.currentMessageIndex];
-  const playerColors = ['#309ce8', '#7e58d6', '#2bbe6f', '#eb951f'];
 
   // The avatar sheet (assets/skai/avatars.png) is a 4 × 3 grid. Each avatar is cropped with
   // the offsets used in the Figma design (a 165 × 179 window onto the sheet).
@@ -607,16 +603,6 @@
     });
   }
 
-  function clueCardMarkup(clue, options = {}) {
-    const selected = options.selected ? 'selected' : '';
-    const draggable = options.draggable ? 'draggable="true"' : '';
-    return `<button class="clue-card ${selected}" type="button" data-clue="${clue.id}" ${draggable} aria-pressed="${Boolean(options.selected)}">
-      <img src="${clue.icon}" alt="">
-      <strong>${clue.label}</strong>
-      <small>${options.small || clue.tip}</small>
-    </button>`;
-  }
-
   function renderTutorial() {
     stage.innerHTML = `
       <section class="screen tutorial">
@@ -638,10 +624,6 @@
   }
 
   // ---------- Ranking and checker style ----------
-
-  function starRowMarkup(count) {
-    return `<span class="mini-stars" aria-hidden="true">${'★'.repeat(count)}</span>`;
-  }
 
   function renderRanking() {
     const used = CLUES.reduce((sum, clue) => sum + (state.weights[clue.id] || 0), 0);
@@ -762,30 +744,6 @@
     if (status === 'green') return { headline: 'LIKELY OKAY', icon: '✓' };
     if (status === 'amber') return { headline: 'NEEDS A CLOSER LOOK', icon: '?' };
     return { headline: 'SUSPICIOUS', icon: '!' };
-  }
-
-  function explainResult(message, result) {
-    const limits = thresholds();
-    const active = CLUES.filter(clue => message.issues[clue.id]).sort((a, b) => state.weights[b.id] - state.weights[a.id]);
-    if (!active.length) return 'No clue showed a problem, so the risk score stayed at 0★.';
-    const names = active.map(clue => `${clue.label} (${state.weights[clue.id]}★)`).join(' + ');
-    const verdict = result.status === 'green'
-      ? `That is below ${limits.green}★, so it looks okay.`
-      : result.status === 'amber'
-        ? `That reaches ${limits.green}★, so it needs a closer look.`
-        : `That reaches ${limits.red}★, so it is flagged suspicious.`;
-    return `${names} = ${result.score}★. ${verdict}`;
-  }
-
-  function scoreMeterMarkup(score) {
-    const limits = thresholds();
-    const pct = value => `${(Math.min(value, TOTAL_STARS) / TOTAL_STARS) * 100}%`;
-    return `<div class="score-meter" role="img" aria-label="Risk score ${score} of ${TOTAL_STARS}. Closer look from ${limits.green}, suspicious from ${limits.red}.">
-      <div class="meter-track" style="--green-end:${pct(limits.green)};--red-start:${pct(limits.red)}">
-        <span class="meter-marker" style="left:${pct(score)}"><b>${score}★</b></span>
-      </div>
-      <div class="meter-scale" aria-hidden="true"><span>0</span><span style="left:${pct(limits.green)}">${limits.green}</span><span style="left:${pct(limits.red)}">${limits.red}</span><span style="left:100%">${TOTAL_STARS}</span></div>
-    </div>`;
   }
 
   // ---------- Test run ----------
@@ -947,7 +905,6 @@
           </div>
           ${perfect ? '' : `<div class="mistake-row ${mistakes.length > 2 ? 'compact' : ''}">${cards}</div>`}
         </div>
-        <img class="character right small" src="assets/characters/kids_group_celebrating.png" alt="Students celebrating their test run">
         <button class="primary-cta bottom-cta" id="fix-mistakes" type="button">${perfect ? 'See final result' : 'Fix the mistakes'}</button>
       </section>`;
     onTap('#fix-mistakes', () => {
