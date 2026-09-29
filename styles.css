@@ -1508,6 +1508,16 @@ body { background: #3f3f3f; }
 #game-shell #stage .test-screen .checker-bar .primary-cta { justify-self: end; }
 #game-shell .menu-button { display: block; margin-left: auto; margin-right: auto; }
 
+/* Thumbnail title screen: preserve the complete artwork above the start action. */
+#game-shell.welcome-mode .stage { inset: 0; }
+#game-shell.welcome-mode #skai-hud, #game-shell.welcome-mode .hud-rails { display: none; }
+#game-shell .welcome-screen { position: relative; padding: 0; overflow: hidden; background: #132e4c; }
+/* Full-screen thumbnail; it is 16:9 like the game, so cover crops at most a sliver. */
+.welcome-thumbnail { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Start button floats bottom-left, over the parent’s sweater, so it never hides the title, the 3–4 players badge or the icons. */
+.welcome-actions { position: absolute; left: calc(70 * var(--u)); bottom: calc(46 * var(--u)); z-index: 2; padding: 0; background: none; }
+#game-shell #stage .welcome-actions .primary-cta { width: calc(430 * var(--u)); font-size: calc(32 * var(--u)); }
+
 /* Shared player/role handoff, over the unchanged mission scene. */
 #turn-modal { background: #111c32a8; backdrop-filter: blur(6px); }
 #turn-modal .turn-dialog { width: min(1120px,86vw); max-height: 90vh; overflow-y: auto; padding: clamp(20px,3vw,42px); border: 2px solid #fff; border-radius: 38px; background: #fffdfa; color: #102c53; box-shadow: 0 24px 70px #07192f40; text-align: center; }
@@ -1532,3 +1542,47 @@ body { background: #3f3f3f; }
 #turn-modal[data-task="ranking"] #turn-ready { background: linear-gradient(120deg,#ffe675,#ffd039); color: #102c53; border-color: #fff0b8; }
 @media (max-height: 700px) { #turn-modal .turn-dialog { padding: 20px 26px; } #turn-modal .turn-kicker { margin-bottom: 14px; } #turn-avatar { max-width: 170px; } #turn-art { margin: 12px 0 6px; } .turn-clue { max-width: 90px; } }
 @media (max-width: 650px) { .turn-layout { grid-template-columns: 1fr; gap: 16px; } .turn-identity { border: 0; padding: 0; display: flex; gap: 12px; align-items: center; } #turn-avatar { width: 85px; margin: 0; flex: none; } .turn-nameplate { flex: 1; } }
+
+/* ---------- Narration: players wait for the narrator, then continue ---------- */
+#game-shell.narrating #stage .primary-cta,
+#game-shell.narrating #stage .secondary-cta,
+#game-shell.narrating #stage .skai-cta,
+#game-shell.narrating #stage .bottom-actions { visibility: hidden; }
+#game-shell.narrating #stage { cursor: progress; }
+#game-shell.narrating .skai-hud::after {
+  content: "Listen\2026";
+  position: absolute;
+  z-index: 30;
+  left: calc(1616 * var(--u));
+  top: calc(104 * var(--u));
+  padding: calc(10 * var(--u)) calc(26 * var(--u)) calc(10 * var(--u)) calc(62 * var(--u));
+  border: calc(2 * var(--u)) solid #fdda76;
+  border-radius: calc(14 * var(--u));
+  background: url("assets/skai/v2/speaker.svg") calc(22 * var(--u)) center / calc(28 * var(--u)) no-repeat, #0a2d94;
+  color: #fff;
+  font: 700 calc(24 * var(--u))/1 "Chakra Petch", sans-serif;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  box-shadow: 0 calc(6 * var(--u)) calc(14 * var(--u)) rgba(0, 0, 0, .3);
+  animation: narration-cue 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes narration-cue { 50% { opacity: .65; } }
+#game-shell.narrating .hud-sound { animation: narration-speaker 1s ease-in-out infinite; }
+@keyframes narration-speaker { 50% { transform: scale(1.08); filter: drop-shadow(0 0 calc(10 * var(--u)) #fdae35); } }
+#game-shell.narration-reveal #stage .primary-cta:not(.bottom-cta),
+#game-shell.narration-reveal #stage .secondary-cta:not(.bottom-cta) { animation: cta-pop .5s cubic-bezier(.34, 1.56, .64, 1) backwards; }
+
+/* Narration spotlight: the card the narrator is talking about lifts and glows. */
+#game-shell #stage [data-clue] { transition: transform .25s ease, box-shadow .25s ease, filter .25s ease; }
+#game-shell #stage [data-clue].narration-spotlight {
+  position: relative;
+  z-index: 5;
+  transform: translateY(calc(-14 * var(--u))) scale(1.05);
+  box-shadow: 0 0 0 calc(5 * var(--u)) #fdae35, 0 0 calc(34 * var(--u)) calc(6 * var(--u)) rgba(253, 174, 53, .65), 0 calc(14 * var(--u)) calc(26 * var(--u)) rgba(0, 0, 0, .25);
+  animation: narration-spotlight 1s ease-in-out infinite;
+}
+@keyframes narration-spotlight { 50% { box-shadow: 0 0 0 calc(5 * var(--u)) #fdae35, 0 0 calc(48 * var(--u)) calc(10 * var(--u)) rgba(253, 174, 53, .85), 0 calc(14 * var(--u)) calc(26 * var(--u)) rgba(0, 0, 0, .25); } }
+#game-shell #stage [data-clue].narration-spotlight { box-shadow: 0 0 0 calc(8 * var(--u)) #fdae35, 0 0 calc(40 * var(--u)) calc(10 * var(--u)) rgba(253, 174, 53, .7), 0 calc(14 * var(--u)) calc(26 * var(--u)) rgba(0, 0, 0, .25); }
+#game-shell #stage :has(> [data-clue].narration-spotlight) > [data-clue]:not(.narration-spotlight) { filter: saturate(.35) brightness(.78); transform: scale(.97); }

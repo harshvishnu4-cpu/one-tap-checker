@@ -27,6 +27,7 @@
   // A CTA only counts as "needed" once it can be pressed: disabled buttons stay hidden (see styles.css)
   // and pop in the moment they become enabled.
   function neededCta() {
+    if (typeof narrationLock !== 'undefined' && narrationLock) return null;
     return [...stage.querySelectorAll(BOTTOM_CTA)].find(element =>
       element.matches('button') ? !element.disabled : Boolean(element.querySelector('button:not(:disabled)')));
   }
@@ -43,6 +44,122 @@
     ctaShown = Boolean(cta);
   }
   new MutationObserver(syncCtaRails).observe(stage, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
+
+  // ---------- Narration ----------
+  // Pre-recorded with ElevenLabs Multilingual v2, voice "Suhana J" (Indian English) — see assets/audio/narration/SCRIPT.md.
+  // Each screen is narrated the first time it appears. While a line plays the screen is locked and its
+  // buttons stay hidden; when the line ends the players can continue.
+  const NARRATED_SCREENS = new Set(['setup-count', 'setup-picker', 'setup-team', 'roles', 'intro', 'tutorial', 'ranking', 'sensitivity', 'test', 'result', 'batch', 'cause', 'adjust', 'retest', 'final']);
+  const narrationAudio = new Audio();
+  narrationAudio.preload = 'auto';
+  const narratedOnce = new Set();
+  let narrationLock = false;
+  let narrationSafety = null;
+  let narrationToken = 0;
+
+  // Word-timed highlights: while a line names a clue, its card lights up. Times (seconds) were measured
+  // from the pauses in each recording (see assets/audio/narration/SCRIPT.md).
+  const NARRATION_CUES = {
+    tutorial: [
+      { at: 1.5, until: 2.65, clues: ['source', 'date', 'image', 'urgent'] }, // "four clues"
+      { at: 3.0, until: 4.15, clues: ['source'] },                          // "the source"
+      { at: 4.18, until: 5.2, clues: ['date'] },                            // "the date"
+      { at: 5.25, until: 6.3, clues: ['image'] },                           // "the image"
+      { at: 6.35, until: 8.5, clues: ['urgent'] }                           // "and urgent words"
+    ]
+  };
+  let cueFrame = null;
+
+  function spotlightClues(ids) {
+    stage.querySelectorAll('[data-clue]').forEach(card => card.classList.toggle('narration-spotlight', ids.includes(card.dataset.clue)));
+  }
+
+  function runNarrationCues(key) {
+    cancelAnimationFrame(cueFrame);
+    const cues = NARRATION_CUES[key];
+    if (!cues) return;
+    const tick = () => {
+      if (!narrationLock) { spotlightClues([]); return; }
+      const t = narrationAudio.currentTime;
+      const cue = cues.find(item => t >= item.at && t < item.until);
+      spotlightClues(cue ? cue.clues : []);
+      cueFrame = requestAnimationFrame(tick);
+    };
+    cueFrame = requestAnimationFrame(tick);
+  }
+
+  function silenceMusicNow() {
+    if (!audioContext || !musicVoice) return;
+    try {
+      musicVoice.gain.cancelScheduledValues(audioContext.currentTime);
+      musicVoice.gain.setTargetAtTime(.0001, audioContext.currentTime, .04);
+    } catch { /* note already finished */ }
+  }
+
+  const narrationKey = () => (state.view === 'setup' ? `setup-${state.setupStep}` : state.view);
+
+  function setNarrationLock(on) {
+    narrationLock = on;
+    gameShell.classList.toggle('narrating', on);
+    if (!on) {
+      gameShell.classList.add('narration-reveal');
+      setTimeout(() => gameShell.classList.remove('narration-reveal'), 700);
+    }
+    syncCtaRails();
+  }
+
+  function stopNarration() {
+    narrationToken += 1;
+    clearTimeout(narrationSafety);
+    narrationAudio.onended = narrationAudio.onerror = null;
+    narrationAudio.pause();
+    cancelAnimationFrame(cueFrame);
+    spotlightClues([]);
+    if (narrationLock) setNarrationLock(false);
+  }
+
+  function playNarration(key) {
+    stopNarration();
+    if (!state.soundOn || !NARRATED_SCREENS.has(key)) return;
+    const token = narrationToken;
+    const finish = () => { if (token === narrationToken) stopNarration(); };
+    narrationAudio.src = `assets/audio/narration/${key}.mp3`;
+    narrationAudio.onended = finish;
+    narrationAudio.onerror = finish;
+    setNarrationLock(true);
+    silenceMusicNow();
+    runNarrationCues(key);
+    narrationAudio.play().then(() => {
+      // Safety net: never keep the players locked longer than the clip (plus a little slack).
+      const seconds = Number.isFinite(narrationAudio.duration) ? narrationAudio.duration : 15;
+      narrationSafety = setTimeout(finish, (seconds + 2) * 1000);
+    }).catch(finish); // autoplay blocked (no tap yet) or file missing: just let them play
+  }
+
+  // Narrate the current screen once it is actually visible (after any "your turn" pop-up is closed).
+  function narrateScreen({ replay = false } = {}) {
+    const key = narrationKey();
+    if (!replay && narratedOnce.has(key)) return;
+    const turnModal = document.querySelector('#turn-modal');
+    if (turnModal && !turnModal.hidden) {
+      const watcher = new MutationObserver(() => {
+        if (!turnModal.hidden) return;
+        watcher.disconnect();
+        if (narrationKey() === key) narrateScreen({ replay });
+      });
+      watcher.observe(turnModal, { attributes: true, attributeFilter: ['hidden'] });
+      return;
+    }
+    narratedOnce.add(key);
+    playNarration(key);
+  }
+
+  // While narrating, taps and keys on the stage do nothing (the HUD — sound, info, hint — still works).
+  ['pointerdown', 'click', 'keydown'].forEach(type => stage.addEventListener(type, event => {
+    if (!narrationLock) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true));
   const MISSION_SECONDS = 35 * 60;
 
   const CLUES = [
@@ -101,6 +218,7 @@
   let audioContext = null;
   let musicTimer = null;
   let musicStep = 0;
+  let musicVoice = null; // gain node of the music note currently sounding
   let toastTimer = null;
   let transitionTimer = null;
   let transitioning = false;
@@ -196,12 +314,13 @@
   }
 
   function playMusicNote() {
-    if (!audioContext || !state.soundOn || !state.musicOn) return;
+    if (!audioContext || !state.soundOn || !state.musicOn || narrationLock) return;
     const notes = [220, 277.18, 329.63, 277.18, 246.94, 329.63];
     const oscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
     oscillator.type = 'sine';
     oscillator.frequency.value = notes[musicStep % notes.length];
+    musicVoice = gain;
     musicStep += 1;
     gain.gain.setValueAtTime(.0001, audioContext.currentTime);
     gain.gain.exponentialRampToValueAtTime(.012, audioContext.currentTime + .04);
@@ -258,7 +377,6 @@
     }
     document.querySelector('#turn-modal').hidden = true;
     toggleSoundMenu(false);
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     clearTimeout(transitionTimer);
     clearTimeout(toastTimer);
     toastEl.classList.remove('show');
@@ -266,6 +384,7 @@
     stage.inert = true;
     stage.style.pointerEvents = 'none';
     stage.classList.add('leaving');
+    stopNarration();
     hideCtaRails();
     transitionTimer = setTimeout(() => {
       const previousOwner = state.activePlayerIndex;
@@ -300,12 +419,14 @@
         ready.onclick = () => { modal.hidden = true; stage.inert = false; stage.focus({preventScroll:true}); };
         ready.focus();
       }
+      narrateScreen();
     }, 220);
   }
 
   // Updates the SKAI HUD: vertical progress bar, player chips (with the LEAD player lit up) and the mission clock.
   function renderProgress() {
     const isSetup = state.view === 'setup';
+    gameShell.classList.toggle('welcome-mode', state.view === 'welcome');
     gameShell.classList.toggle('setup-mode', isSetup);
     skaiBack.disabled = !screenHistory.length;
     skaiBack.setAttribute('aria-label', 'Back to the previous screen');
@@ -341,7 +462,7 @@
   function startMissionClock() {
     if (missionTimer) return;
     missionTimer = setInterval(() => {
-      if (state.view === 'setup' || state.finished || document.hidden || document.querySelector('.modal:not([hidden])') || state.timeLeft <= 0) return;
+      if (['welcome', 'setup'].includes(state.view) || state.finished || document.hidden || document.querySelector('.modal:not([hidden])') || state.timeLeft <= 0) return;
       state.timeLeft -= 1;
       renderMissionClock();
     }, 1000);
@@ -370,6 +491,14 @@
   function goSetup(step) {
     state.setupStep = step;
     setView('setup', renderSetup);
+  }
+
+  function renderWelcome() {
+    stage.innerHTML = `<section class="screen welcome-screen" aria-label="Forwarded Message Checker">
+      <img class="welcome-thumbnail" src="assets/thumbnails/forwarded-message-checker.png" alt="Forwarded Message Checker — investigate messages together. For 3–4 players.">
+      <div class="welcome-actions"><button class="primary-cta" id="start-mission" type="button">Start mission <span aria-hidden="true">→</span></button></div>
+    </section>`;
+    onTap('#start-mission', () => { tone('tap'); setView('setup', renderSetup); });
   }
 
   function renderSetup() {
@@ -1310,7 +1439,6 @@
 
   function restartGame() {
     toggleSoundMenu(false);
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     document.querySelector('#turn-modal').hidden = true;
     stopMissionClock();
     scanTimers.forEach(clearTimeout);
@@ -1320,6 +1448,8 @@
     state = freshState({ soundOn: state.soundOn, musicOn: state.musicOn, sfxOn: state.sfxOn });
     screenHistory = [];
     currentScreen = null;
+    stopNarration();
+    narratedOnce.clear();
     settingsModal.hidden = true;
     recapModal.hidden = true;
     updateSoundButton();
@@ -1344,21 +1474,15 @@
 
   // Reads the current screen's title and instruction aloud with the browser's speech voice.
   function replayNarration() {
-    if (!('speechSynthesis' in window)) {
-      showToast('Narration is not available in this browser.');
-      return;
-    }
     if (!state.soundOn) {
       showToast('Sounds are muted. Turn them on to hear the narration.');
       return;
     }
-    const parts = [...stage.querySelectorAll('h1, .screen-support, .skai-footnote')]
-      .map(element => element.textContent.trim())
-      .filter(Boolean);
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(parts.join('. ') || 'Follow the instructions on the screen.');
-    utterance.rate = .95;
-    window.speechSynthesis.speak(utterance);
+    if (!NARRATED_SCREENS.has(narrationKey())) {
+      showToast('There is no narration for this screen.');
+      return;
+    }
+    narrateScreen({ replay: true });
   }
 
   // Back tab: always returns to the previous screen.
@@ -1392,7 +1516,7 @@
 
   function toggleSound() {
     state.soundOn = !state.soundOn;
-    if (!state.soundOn && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (!state.soundOn) stopNarration();
     updateSoundButton();
     updateMusicLoop();
     if (state.soundOn) tone('tap');
@@ -1461,8 +1585,10 @@
     Promise.race([Promise.all(tasks), new Promise(resolve => setTimeout(resolve, 2200))]).then(() => {
       loadingEl.classList.add('hidden');
       setTimeout(() => loadingEl.remove(), 450);
-      renderSetup();
-      currentScreen = { view: 'setup', renderFn: renderSetup, snapshot: snapshot() };
+      state.view = 'welcome';
+      renderWelcome();
+      currentScreen = { view: 'welcome', renderFn: renderWelcome, snapshot: snapshot() };
+      narrateScreen();
       renderProgress();
     });
   }

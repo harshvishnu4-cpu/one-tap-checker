@@ -89,6 +89,11 @@ async function waitFor(selector, timeout = 8000) {
 async function click(selector) {
   await waitFor(selector);
   await evaluate(`(() => { const modal = document.querySelector('#turn-modal'); if (modal && !modal.hidden) document.querySelector('#turn-ready').click(); })()`);
+  // Players can only act once the narrator has finished (the HUD stays usable while it speaks).
+  if (!selector.startsWith('#skai-') && !selector.startsWith('#sound-')) {
+    const deadline = Date.now() + 25000;
+    while (Date.now() < deadline && await evaluate(`document.querySelector('#game-shell').classList.contains('narrating')`)) await sleep(150);
+  }
   const clicked = await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el || el.disabled) return false; el.click(); return true; })()`);
   if (!clicked) throw new Error(`Element was not clickable: ${selector}`);
   await sleep(280);
@@ -129,6 +134,9 @@ await command('Emulation.setDeviceMetricsOverride', {
 await command('Page.reload', { ignoreCache: true });
 await sleep(400);
 
+// The game opens on a welcome screen; start the mission to reach setup.
+await waitFor('#start-mission, .skai-count-card');
+if (await exists('#start-mission')) await click('#start-mission');
 await waitFor('.skai-count-card');
 await sleep(550);
 const initialViewport = await evaluate(`({ bodyScroll: document.body.scrollHeight > innerHeight, shell: (() => { const r = document.querySelector('#game-shell').getBoundingClientRect(); return { width: r.width, height: r.height }; })() })`);
@@ -218,7 +226,8 @@ for (let index = 0; index < 8; index += 1) {
   await waitFor('#result-next', 6000);
   if (index === 0) {
     await screenshot('09-result.png');
-    // A fast double press must only advance one message.
+    // A fast double press must only advance one message (once the narrator has finished).
+    for (let wait = 0; wait < 160 && await evaluate(`document.querySelector('#game-shell').classList.contains('narrating')`); wait += 1) await sleep(150);
     await evaluate(`(() => { const el = document.querySelector('#result-next'); el.click(); el.click(); })()`);
     await sleep(320);
   } else {
