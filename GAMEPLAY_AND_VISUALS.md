@@ -109,7 +109,7 @@ Balance: the real messages only use urgent words, so weighting **Urgent** too he
 
 ## 6. Audio
 
-- **Narration:** one line per screen, pre-recorded with ElevenLabs **Multilingual v2**, voice **Suhana J** (Indian English). The files are in `assets/audio/narration/` and the script is in `SCRIPT.md` there.
+- **Narration:** one line per screen, pre-recorded with ElevenLabs **Multilingual v2**, voice **Suhana J** (Indian English). The files are in `assets/audio/narration/`.
   - Each screen is narrated the first time it appears.
   - While it plays, the screen is locked, its buttons are hidden, and a **"Listen…"** tag shows under the sound button.
   - When it ends, players can continue.
@@ -182,10 +182,3 @@ All fonts are stored locally in `assets/fonts/`.
 - **Phones and tablets held upright:** they see a **"Turn your device sideways to play"** screen.
 - **Touch devices:** Start switches to fullscreen and requests landscape where the browser allows it (Android Chrome).
 - **Offline:** the game makes no internet requests. Copy the whole folder and open `index.html` in Chrome, Edge or Firefox.
-
----
-
-## 9. For testing
-
-- **Dev menu:** a hamburger button under the back tab jumps to any screen and fills in sample data. It shows by default; add `?dev=0` to the URL to hide it. To remove it, follow `dev/README.md`.
-- **End-to-end test:** `scripts/e2e-smoke.mjs` plays a full game through Chrome DevTools. Options are listed in `README.md`.

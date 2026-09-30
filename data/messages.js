@@ -1,11 +1,10 @@
 // Each message lists which clues show a problem. The rule engine adds the
-// star weight of every flagged clue to get a risk score.
-// Balance notes (weights always total 10 stars, 1–5 per clue):
+// points of every flagged clue to get a risk score (20 points in total, 1–10 per clue).
+// Balance notes (default thresholds: review from 6, suspicious from 8):
 // - Three fake/misleading messages have exactly one problem clue (source, date,
-//   image), so each of those clues needs 3+ stars to leave green on Balanced.
+//   image), so each of those clues needs enough points to reach the review line.
 // - The two real alerts only use urgent words, so giving Urgent Words too many
-//   stars makes the Strict style flag real news as suspicious.
-// - A 3/3/3/1 rule (Urgent Words lowest) checks every message correctly.
+//   points makes the checker flag real news as suspicious.
 window.MESSAGE_DATA = [
   {
     id: 'school-rain',

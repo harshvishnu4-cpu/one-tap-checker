@@ -1687,16 +1687,5 @@
     });
   }
 
-  // ---------- DEV MENU HOOK — only used by dev/dev-menu.js. Delete this block along with the dev/ folder. ----------
-  window.CheckerDev = {
-    get state() { return state; },
-    views: { setup: renderSetup, roles: renderRoles, intro: renderIntro, tutorial: renderTutorial, ranking: renderRanking, sensitivity: renderSensitivity, test: renderTest, result: renderResult, batch: renderBatch, cause: renderCause, adjust: renderAdjust, retest: renderRetest, final: renderFinal },
-    go: (view, renderFn) => setView(view, renderFn, { force: true }),
-    computeResult,
-    findMistakes,
-    showRecap
-  };
-  // ---------- END DEV MENU HOOK ----------
-
   preload();
 })();

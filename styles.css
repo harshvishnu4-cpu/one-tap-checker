@@ -250,7 +250,6 @@ button:focus-visible, [tabindex="0"]:focus-visible {
 .tutorial .clue-card.selected small { color: var(--navy); }
 
 @keyframes slot-pulse { 50% { box-shadow: 0 0 0 .3rem rgba(255,191,52,.35); } }
-.mini-stars { color: var(--yellow); letter-spacing: .05em; text-shadow: 0 1px 0 #a36900; }
 
 .test-layout {
   position: relative;
@@ -268,22 +267,6 @@ button:focus-visible, [tabindex="0"]:focus-visible {
 .scan-state { grid-column: 1 / 3; justify-self: center; min-width: 2.8rem; height: 2.5rem; padding: 0 .5rem; display: grid; place-items: center; border-radius: 999px; background: #e5ebf1; color: var(--muted); font-size: 1.55rem; font-weight: 900; transition: transform .24s ease, background .24s ease; }
 
 .checker-bar { display: flex; align-items: center; justify-content: center; }
-
-.score-meter { width: 88%; margin: 1.1rem auto 0; }
-.meter-track {
-  position: relative;
-  height: 1rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--green) 0 var(--green-end), var(--yellow) var(--green-end) var(--red-start), var(--red) var(--red-start) 100%);
-  box-shadow: inset 0 2px 3px rgba(0,0,0,.15);
-}
-.meter-marker { position: absolute; top: 50%; width: 1.6rem; height: 1.6rem; border: .25rem solid #fff; border-radius: 50%; background: var(--navy); box-shadow: 0 3px 8px rgba(20,48,80,.3); transform: translate(-50%, -50%); animation: marker-in .6s ease backwards; }
-.meter-marker b { position: absolute; bottom: 130%; left: 50%; padding: .1rem .45rem; border-radius: .6rem; background: var(--navy); color: #fff; font-size: .85rem; white-space: nowrap; transform: translateX(-50%); }
-@keyframes marker-in { from { left: 0; } }
-.meter-scale { position: relative; height: 1.2rem; margin-top: .25rem; font-size: .78rem; font-weight: 900; color: var(--muted); }
-.meter-scale span { position: absolute; transform: translateX(-50%); }
-.meter-scale span:first-child { left: 0; transform: none; }
-.meter-scale span:last-child { transform: translateX(-100%); }
 
 .batch-layout { position: relative; z-index: 4; width: 70%; margin: 1.7% 0 0 7%; }
 .score-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.3rem; width: 58%; margin: 0 auto; }
@@ -448,7 +431,6 @@ button:focus-visible, [tabindex="0"]:focus-visible {
 .loading-light i:nth-child(2) { background: var(--yellow); animation-delay: .14s; }
 .loading-light i:nth-child(3) { background: var(--green); animation-delay: .28s; }
 @keyframes loading { 50% { transform: translateY(-.45rem); } }
-
 
 /* Message investigation workspace: typography stays live and readable. */
 #game-shell:has(.test-screen) { background: #14243f url('assets/backgrounds/bg_message_studio.png') center/cover no-repeat; }
@@ -636,7 +618,6 @@ button:focus-visible, [tabindex="0"]:focus-visible {
 .skai-team-avatar:hover { transform: scale(1.06); }
 .team-note { left: 0; right: 0; top: calc(846 * var(--u)); }
 
-
 /* ---------- SKAI theme for the whole game ----------
    Everything after setup reuses the SKAI HUD and the look of the Figma setup screens:
    grey stage, navy gradient cards with an orange top edge, Chakra Petch headings, Fredoka buttons. */
@@ -731,9 +712,6 @@ body { background: #3f3f3f; }
 .scan-state { background: rgba(255, 255, 255, .14); color: #fff; }
 
 .phone-display { color: #162a4a; font-family: "Inter", sans-serif; }
-
-.meter-marker { background: var(--skai-orange); }
-.meter-marker b { background: #0a2b8b; border: 1px solid var(--skai-orange); }
 
 /* Batch */
 .score-card strong { font-family: "Chakra Petch", sans-serif; }
@@ -879,7 +857,6 @@ body { background: #3f3f3f; }
 
 /* Message check layout. */
 .test-screen .test-layout { width: 91%; height: 74%; grid-template-columns: 1.35fr 1fr; gap: 2%; margin-top: 1%; }
-
 
 /* ---------- SKAI v2 HUD, CTA plates and cards (Figma 557:2877, 557:2699, 907:2993) ----------
    Positions are Figma pixels on the 1959 × 1102 frame (1 --u = 1 Figma px). */
@@ -1429,8 +1406,8 @@ body { background: #3f3f3f; }
 /* Full-screen thumbnail; it is 16:9 like the game, so cover crops at most a sliver. */
 .welcome-thumbnail { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
 /* Start button floats bottom-left, over the parent’s sweater, so it never hides the title, the 3–4 players badge or the icons. */
-.welcome-actions { position: absolute; left: calc(70 * var(--u)); bottom: calc(46 * var(--u)); z-index: 2; padding: 0; background: none; }
-#game-shell #stage .welcome-actions .primary-cta { width: calc(430 * var(--u)); font-size: calc(32 * var(--u)); }
+.welcome-actions { position: absolute; left: 50%; bottom: calc(148 * var(--u)); z-index: 2; padding: 0; background: none; transform: translateX(-50%); }
+#game-shell #stage .welcome-actions .primary-cta { width: calc(640 * var(--u)); min-height: calc(180 * var(--u)); font-size: calc(58 * var(--u)); }
 
 /* Shared player/role handoff, over the unchanged mission scene. */
 #turn-modal { background: #111c32a8; backdrop-filter: blur(6px); }
@@ -1454,7 +1431,6 @@ body { background: #3f3f3f; }
 #turn-modal .turn-team-note { border: 0; padding: 0; margin: 10px 0 18px; font-size: clamp(13px,22.4px,19px); color: #375475; }
 #turn-modal #turn-ready { width: 80%; aspect-ratio: auto; margin: 0 auto; padding: 15px 25px; border: 2px solid #edf7ff; border-radius: 999px; background: linear-gradient(120deg,#159aff,#0075f5); color: white; font: 800 clamp(20px,36.8px,32px)/1.2 'Segoe UI',sans-serif; box-shadow: 0 6px 15px #0879eb25; clip-path: none; }
 #turn-modal[data-task="ranking"] #turn-ready { background: linear-gradient(120deg,#ffe675,#ffd039); color: #102c53; border-color: #fff0b8; }
-
 
 /* ---------- Narration: players wait for the narrator, then continue ---------- */
 #game-shell.narrating #stage .primary-cta,
