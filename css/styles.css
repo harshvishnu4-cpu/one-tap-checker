@@ -43,7 +43,7 @@ button:focus-visible, [tabindex="0"]:focus-visible {
   isolation: isolate;
   background:
     linear-gradient(rgba(255,255,255,.05), rgba(255,255,255,.05)),
-    url("assets/backgrounds/bg_learning_room_clean.png") center/cover no-repeat;
+    url("../assets/backgrounds/bg_learning_room_clean.png") center/cover no-repeat;
   box-shadow: 0 0 80px rgba(0,0,0,.45);
 }
 
@@ -433,7 +433,7 @@ button:focus-visible, [tabindex="0"]:focus-visible {
 @keyframes loading { 50% { transform: translateY(-.45rem); } }
 
 /* Message investigation workspace: typography stays live and readable. */
-#game-shell:has(.test-screen) { background: #14243f url('assets/backgrounds/bg_message_studio.png') center/cover no-repeat; }
+#game-shell:has(.test-screen) { background: #14243f url('../assets/backgrounds/bg_message_studio.png') center/cover no-repeat; }
 .test-screen .screen-heading { color: #f3f8ff; background: none; border: 0; box-shadow: none; text-shadow: none; }
 .test-screen .screen-support { background: rgba(207,226,255,.12); color: #dceaff; }
 .test-screen::before { background: none; }
@@ -479,10 +479,10 @@ button:focus-visible, [tabindex="0"]:focus-visible {
 
 /* ---------- SKAI setup flow (Figma "SKAI final" frames 616:7826 / 8259 / 8712 / 9164) ----------
    --u is one Figma pixel on the 1959.11 × 1102 frame, so every size below comes straight from the design. */
-@font-face { font-family: "Chakra Petch"; font-weight: 400; font-display: swap; src: url("assets/fonts/ChakraPetch-Regular.woff2") format("woff2"); }
-@font-face { font-family: "Chakra Petch"; font-weight: 700; font-display: swap; src: url("assets/fonts/ChakraPetch-Bold.woff2") format("woff2"); }
-@font-face { font-family: "Fredoka One"; font-weight: 400; font-display: swap; src: url("assets/fonts/FredokaOne-Regular.woff2") format("woff2"); }
-@font-face { font-family: "Inter"; font-weight: 100 900; font-display: swap; src: url("assets/fonts/Inter-Variable.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 400; font-display: swap; src: url("../assets/fonts/ChakraPetch-Regular.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 700; font-display: swap; src: url("../assets/fonts/ChakraPetch-Bold.woff2") format("woff2"); }
+@font-face { font-family: "Fredoka One"; font-weight: 400; font-display: swap; src: url("../assets/fonts/FredokaOne-Regular.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 100 900; font-display: swap; src: url("../assets/fonts/Inter-Variable.woff2") format("woff2"); }
 
 #game-shell {
   --u: calc(min(1600px, 900px * 16 / 9) / 1959.11);
@@ -522,7 +522,7 @@ button:focus-visible, [tabindex="0"]:focus-visible {
 .skai-steps { display: flex; gap: calc(96 * var(--u)); height: calc(80 * var(--u)); padding: 0; list-style: none; }
 .skai-steps.count { left: calc(276 * var(--u)); top: calc(839 * var(--u)); }
 .skai-steps.picker { left: calc(252 * var(--u)); top: calc(813 * var(--u)); }
-.skai-step-line { position: absolute; top: calc(37 * var(--u)); width: calc(250 * var(--u)); height: calc(3 * var(--u)); background: url("assets/skai/step_line.svg") center / 100% 100% no-repeat; }
+.skai-step-line { position: absolute; top: calc(37 * var(--u)); width: calc(250 * var(--u)); height: calc(3 * var(--u)); background: url("../assets/skai/step_line.svg") center / 100% 100% no-repeat; }
 .skai-step-line:nth-child(1) { left: calc(395 * var(--u)); }
 .skai-step-line:nth-child(2) { left: calc(888 * var(--u)); }
 .skai-step { position: relative; z-index: 1; width: calc(405 * var(--u)); height: 100%; border: calc(.5 * var(--u)) solid #fff; border-radius: calc(15 * var(--u)); background: linear-gradient(169.83deg, rgb(26, 60, 141) 5.3232%, rgb(7, 24, 72) 97.378%); }
@@ -605,8 +605,8 @@ button:focus-visible, [tabindex="0"]:focus-visible {
 .team-4 .skai-chips { --cs: .9147; left: calc(314 * var(--u)); top: calc(26 * var(--u)); gap: calc(45.73 * var(--u)); }
 .skai-chip { position: relative; width: calc(265 * var(--u) * var(--cs)); height: calc(102 * var(--u) * var(--cs)); }
 .skai-chip > * { position: absolute; }
-.skai-chip::before { content: ""; position: absolute; left: calc(58.5 * var(--u) * var(--cs)); top: calc(25.5 * var(--u) * var(--cs)); width: calc(207.95 * var(--u) * var(--cs)); height: calc(51.96 * var(--u) * var(--cs)); background: url("assets/skai/chip_tab.svg") center / 100% 100% no-repeat; }
-.skai-chip::after { content: ""; position: absolute; left: calc(4 * var(--u) * var(--cs)); top: calc(9 * var(--u) * var(--cs)); width: calc(85 * var(--u) * var(--cs)); height: calc(85 * var(--u) * var(--cs)); background: url("assets/skai/chip_ring.svg") center / 100% 100% no-repeat; }
+.skai-chip::before { content: ""; position: absolute; left: calc(58.5 * var(--u) * var(--cs)); top: calc(25.5 * var(--u) * var(--cs)); width: calc(207.95 * var(--u) * var(--cs)); height: calc(51.96 * var(--u) * var(--cs)); background: url("../assets/skai/chip_tab.svg") center / 100% 100% no-repeat; }
+.skai-chip::after { content: ""; position: absolute; left: calc(4 * var(--u) * var(--cs)); top: calc(9 * var(--u) * var(--cs)); width: calc(85 * var(--u) * var(--cs)); height: calc(85 * var(--u) * var(--cs)); background: url("../assets/skai/chip_ring.svg") center / 100% 100% no-repeat; }
 .skai-chip .chip-avatar { z-index: 1; left: 0; top: 0; width: calc(94 * var(--u) * var(--cs)); }
 .skai-chip-name { left: calc(100 * var(--u) * var(--cs)); top: calc(39 * var(--u) * var(--cs)); max-width: calc(150 * var(--u) * var(--cs)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 calc(18 * var(--u) * var(--cs))/normal "Chakra Petch", sans-serif; }
 .skai-team-cards { display: flex; }
@@ -631,10 +631,10 @@ button:focus-visible, [tabindex="0"]:focus-visible {
   --skai-radius: max(calc(26 * var(--u)), .9rem);
   --skai-lift: 0 calc(10 * var(--u)) calc(24 * var(--u)) rgba(0, 0, 0, .28);
   --skai-cta-bg:
-    url("assets/skai/volt_button.svg") left calc(14 * var(--u)) top calc(10 * var(--u)) / calc(12 * var(--u)) no-repeat,
-    url("assets/skai/volt_button.svg") left calc(14 * var(--u)) bottom calc(10 * var(--u)) / calc(12 * var(--u)) no-repeat,
-    url("assets/skai/volt_button.svg") right calc(14 * var(--u)) top calc(10 * var(--u)) / calc(12 * var(--u)) no-repeat,
-    url("assets/skai/volt_button.svg") right calc(14 * var(--u)) bottom calc(10 * var(--u)) / calc(12 * var(--u)) no-repeat;
+    url("../assets/skai/volt_button.svg") left calc(14 * var(--u)) top calc(10 * var(--u)) / calc(12 * var(--u)) no-repeat,
+    url("../assets/skai/volt_button.svg") left calc(14 * var(--u)) bottom calc(10 * var(--u)) / calc(12 * var(--u)) no-repeat,
+    url("../assets/skai/volt_button.svg") right calc(14 * var(--u)) top calc(10 * var(--u)) / calc(12 * var(--u)) no-repeat,
+    url("../assets/skai/volt_button.svg") right calc(14 * var(--u)) bottom calc(10 * var(--u)) / calc(12 * var(--u)) no-repeat;
   --muted: var(--skai-text-soft);
   color: #fff;
   font-family: "Inter", "Segoe UI", system-ui, sans-serif;
@@ -807,7 +807,7 @@ body { background: #3f3f3f; }
 
 /* A quieter, readable room setting for the shared-device game. */
 #game-shell, #game-shell:has(.test-screen) {
-  background: linear-gradient(rgba(17,30,48,.40), rgba(17,30,48,.52)), url('assets/backgrounds/bg_learning_room_clean.png') center/cover no-repeat;
+  background: linear-gradient(rgba(17,30,48,.40), rgba(17,30,48,.52)), url('../assets/backgrounds/bg_learning_room_clean.png') center/cover no-repeat;
 }
 .screen-heading, .test-screen .screen-heading { font-family: 'Segoe UI', sans-serif; font-weight: 750; letter-spacing: -.025em; text-shadow: 0 2px 8px #0005; }
 .screen-support, .test-screen .screen-support { font-family: 'Segoe UI', sans-serif; font-weight: 500; color: #fff; background: rgba(18,34,52,.82); border-radius: 8px; padding: .4rem .8rem; }
@@ -836,7 +836,7 @@ body { background: #3f3f3f; }
 .turn-dialog .menu-button.primary { background: #16778a; color: #fff; border: 0; font-family: inherit; text-transform: none; }
 
 /* Story opening: a live notification, not a flattened screenshot. */
-#game-shell:has(.intro) { background: linear-gradient(#17233920,#17233940), url('assets/backgrounds/bg_learning_room_clean.png') center/cover no-repeat; }
+#game-shell:has(.intro) { background: linear-gradient(#17233920,#17233940), url('../assets/backgrounds/bg_learning_room_clean.png') center/cover no-repeat; }
 .intro .character.left { height: 96%; left: 1%; bottom: -3%; }
 .intro-notification { position: absolute; left: 36%; right: 5%; top: 18%; padding: 2% 3%; border: 2px solid #bdd9ec; border-radius: 32px; background: #fcfdff; color: #20355d; box-shadow: 0 12px 28px #17233938; font-family: 'Segoe UI',sans-serif; animation: notification-arrive .5s ease-out both; }
 .intro-notification header { display: flex; justify-content: space-between; align-items: center; color: #7d90ae; font-size: clamp(16px,28.8px,28px); }
@@ -867,19 +867,19 @@ body { background: #3f3f3f; }
     var(--cta-slot) right calc(57.75 * var(--u)) top calc(40.2 * var(--u)) / calc(1 * var(--u)) calc(9 * var(--u)) no-repeat,
     var(--cta-slot) left calc(26 * var(--u)) bottom calc(21.9 * var(--u)) / calc(1 * var(--u)) calc(9 * var(--u)) no-repeat,
     var(--cta-slot) right calc(26.75 * var(--u)) bottom calc(21.9 * var(--u)) / calc(1 * var(--u)) calc(9 * var(--u)) no-repeat,
-    url("assets/skai/v2/screw_blue_c.svg") left calc(53 * var(--u)) top calc(18.2 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
-    url("assets/skai/v2/screw_blue_a.svg") right calc(51 * var(--u)) top calc(37.2 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
-    url("assets/skai/v2/screw_blue_b.svg") left calc(19 * var(--u)) bottom calc(17.9 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
-    url("assets/skai/v2/screw_blue_a.svg") right calc(20 * var(--u)) bottom calc(18.9 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat;
+    url("../assets/skai/v2/screw_blue_c.svg") left calc(53 * var(--u)) top calc(18.2 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
+    url("../assets/skai/v2/screw_blue_a.svg") right calc(51 * var(--u)) top calc(37.2 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
+    url("../assets/skai/v2/screw_blue_b.svg") left calc(19 * var(--u)) bottom calc(17.9 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
+    url("../assets/skai/v2/screw_blue_a.svg") right calc(20 * var(--u)) bottom calc(18.9 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat;
   --cta-screws-orange:
     var(--cta-slot) left calc(60 * var(--u)) top calc(21.2 * var(--u)) / calc(1 * var(--u)) calc(9 * var(--u)) no-repeat,
     var(--cta-slot) right calc(57.75 * var(--u)) top calc(40.2 * var(--u)) / calc(1 * var(--u)) calc(9 * var(--u)) no-repeat,
     var(--cta-slot) left calc(26 * var(--u)) bottom calc(21.9 * var(--u)) / calc(1 * var(--u)) calc(9 * var(--u)) no-repeat,
     var(--cta-slot) right calc(26.75 * var(--u)) bottom calc(21.9 * var(--u)) / calc(1 * var(--u)) calc(9 * var(--u)) no-repeat,
-    url("assets/skai/v2/screw_orange_c.svg") left calc(53 * var(--u)) top calc(18.2 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
-    url("assets/skai/v2/screw_orange_d.svg") right calc(51 * var(--u)) top calc(37.2 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
-    url("assets/skai/v2/screw_orange_b.svg") left calc(19 * var(--u)) bottom calc(17.9 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
-    url("assets/skai/v2/screw_orange_a.svg") right calc(20 * var(--u)) bottom calc(18.9 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat;
+    url("../assets/skai/v2/screw_orange_c.svg") left calc(53 * var(--u)) top calc(18.2 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
+    url("../assets/skai/v2/screw_orange_d.svg") right calc(51 * var(--u)) top calc(37.2 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
+    url("../assets/skai/v2/screw_orange_b.svg") left calc(19 * var(--u)) bottom calc(17.9 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat,
+    url("../assets/skai/v2/screw_orange_a.svg") right calc(20 * var(--u)) bottom calc(18.9 * var(--u)) / calc(14.77 * var(--u)) calc(15.99 * var(--u)) no-repeat;
   --skai-card:
     linear-gradient(133.36deg, rgb(26, 60, 141) 5.3232%, rgb(7, 24, 72) 97.378%);
   --skai-card-shadow: inset 0 calc(5.154 * var(--u)) 0 #fdae35, 0 calc(10 * var(--u)) calc(24 * var(--u)) rgba(0, 0, 0, .28);
@@ -930,7 +930,7 @@ body { background: #3f3f3f; }
 .hint-bulb { left: calc(46.2 * var(--u)); top: calc(30.3 * var(--u)); width: calc(35.38 * var(--u)); height: calc(52.03 * var(--u)); }
 
 /* Sound dropdown (Replay Narration / Mute All Sounds) */
-.sound-menu { left: calc(1529 * var(--u)); top: calc(94 * var(--u)); width: calc(175 * var(--u)); height: calc(167 * var(--u)); background: url("assets/skai/v2/sound_menu.svg") center / 100% 100% no-repeat; pointer-events: auto; filter: drop-shadow(0 calc(8 * var(--u)) calc(14 * var(--u)) rgba(0, 0, 0, .35)); animation: sound-menu-in .16s ease-out; }
+.sound-menu { left: calc(1529 * var(--u)); top: calc(94 * var(--u)); width: calc(175 * var(--u)); height: calc(167 * var(--u)); background: url("../assets/skai/v2/sound_menu.svg") center / 100% 100% no-repeat; pointer-events: auto; filter: drop-shadow(0 calc(8 * var(--u)) calc(14 * var(--u)) rgba(0, 0, 0, .35)); animation: sound-menu-in .16s ease-out; }
 .sound-menu[hidden] { display: none; }
 @keyframes sound-menu-in { from { opacity: 0; transform: translateY(calc(-6 * var(--u))); } }
 .sound-menu-item { position: absolute; left: calc(12 * var(--u)); width: calc(151 * var(--u)); height: calc(58 * var(--u)); padding: 0; border: 0; border-radius: calc(10 * var(--u)); background: none; color: #fff; text-align: left; cursor: pointer; }
@@ -954,7 +954,7 @@ body { background: #3f3f3f; }
   padding: 0 calc(80 * var(--u));
   border: 0;
   border-radius: 0;
-  background: var(--cta-screws-orange), url("assets/skai/v2/cta_plate_orange.svg") center / 100% 100% no-repeat;
+  background: var(--cta-screws-orange), url("../assets/skai/v2/cta_plate_orange.svg") center / 100% 100% no-repeat;
   box-shadow: none;
   color: #fff;
   font: 700 calc(34 * var(--u))/1.1 "Chakra Petch", sans-serif;
@@ -963,7 +963,7 @@ body { background: #3f3f3f; }
   filter: drop-shadow(0 calc(6 * var(--u)) calc(10 * var(--u)) rgba(0, 0, 0, .25));
 }
 .secondary-cta, .secondary-cta.small-cta, .skai-cta {
-  background: var(--cta-screws-blue), url("assets/skai/v2/cta_plate_blue.svg") center / 100% 100% no-repeat;
+  background: var(--cta-screws-blue), url("../assets/skai/v2/cta_plate_blue.svg") center / 100% 100% no-repeat;
   border: 0;
   color: #fff;
 }
@@ -1038,7 +1038,7 @@ body { background: #3f3f3f; }
 @keyframes turn-glow { 50% { filter: drop-shadow(0 0 calc(2 * var(--u)) var(--skai-orange)) drop-shadow(0 0 calc(6 * var(--u)) rgba(253, 174, 53, .45)); } }
 
 /* Mission team briefing — reference-inspired cards, scoped to this screen. */
-#game-shell:has(.roles-screen) { background: url('assets/backgrounds/bg_learning_room_clean.png') center/cover no-repeat; }
+#game-shell:has(.roles-screen) { background: url('../assets/backgrounds/bg_learning_room_clean.png') center/cover no-repeat; }
 #game-shell:has(.roles-screen)::before { background: #ffffff12; }
 #game-shell:has(.roles-screen) .stage { inset: calc(112 * var(--u)) calc(118 * var(--u)) 0; }
 #game-shell:has(.roles-screen) .hud-rails { visibility: hidden; }
@@ -1083,7 +1083,7 @@ body { background: #3f3f3f; }
 .intro #reopen-notification { left: 49%; top: 46%; font-size: calc(26 * var(--u)); }
 
 /* Four-clue introduction — pastel reference cards, original room retained. */
-#game-shell:has(.tutorial) { background: linear-gradient(#ffffff18,#ffffff18), url('assets/backgrounds/bg_learning_room_clean.png') center/cover no-repeat; }
+#game-shell:has(.tutorial) { background: linear-gradient(#ffffff18,#ffffff18), url('../assets/backgrounds/bg_learning_room_clean.png') center/cover no-repeat; }
 #game-shell:has(.tutorial) .hud-rails { visibility: hidden; }
 .tutorial .screen-heading { display: table; margin: 0 auto; padding: calc(10 * var(--u)) calc(35 * var(--u)); border: 0; border-radius: 35% 8% 25% 8% / 15% 30% 20% 30%; background: #ffeab5; color: #09264f; text-shadow: none; box-shadow: none; font: 850 calc(63 * var(--u))/1.15 'Segoe UI',sans-serif; }
 .tutorial .screen-support { margin: calc(10 * var(--u)) auto 0; padding: calc(4 * var(--u)) calc(20 * var(--u)); background: #fff5dfeb; color: #09264f; font: 600 calc(30 * var(--u))/1.2 'Segoe UI',sans-serif; }
@@ -1102,7 +1102,7 @@ body { background: #3f3f3f; }
 .tutorial #tutorial-next span { margin-left: calc(20 * var(--u)); }
 
 /* Shared-star allocation: existing reference illustrations and room background. */
-#game-shell:has(.allocation-screen) { background: linear-gradient(#ffffff18,#ffffff18), url('assets/backgrounds/bg_learning_room_clean.png') center/cover no-repeat; }
+#game-shell:has(.allocation-screen) { background: linear-gradient(#ffffff18,#ffffff18), url('../assets/backgrounds/bg_learning_room_clean.png') center/cover no-repeat; }
 #game-shell:has(.allocation-screen) .hud-rails { visibility: hidden; }
 .allocation-screen .screen-heading { display: table; margin: 0 auto; padding: calc(12 * var(--u)) calc(30 * var(--u)); background: #ffe9b4; color: #09264f; text-shadow: none; border-radius: 999px; font: 850 calc(45 * var(--u))/1.15 'Segoe UI',sans-serif; }
 .allocation-screen .screen-support { margin: calc(9 * var(--u)) auto 0; font-size: calc(27 * var(--u)); border-radius: 999px; }
@@ -1296,7 +1296,7 @@ body { background: #3f3f3f; }
   padding: 0 calc(80 * var(--u));
   border: 0;
   border-radius: 0;
-  background: var(--cta-screws-orange), url("assets/skai/v2/cta_plate_orange.svg") center / 100% 100% no-repeat;
+  background: var(--cta-screws-orange), url("../assets/skai/v2/cta_plate_orange.svg") center / 100% 100% no-repeat;
   box-shadow: none;
   color: #fff;
   font: 700 calc(34 * var(--u))/1.1 "Chakra Petch", sans-serif;
@@ -1310,7 +1310,7 @@ body { background: #3f3f3f; }
 #game-shell #stage .secondary-cta.small-cta,
 #game-shell #stage .skai-cta,
 #game-shell .menu-button:not(.primary) {
-  background: var(--cta-screws-blue), url("assets/skai/v2/cta_plate_blue.svg") center / 100% 100% no-repeat;
+  background: var(--cta-screws-blue), url("../assets/skai/v2/cta_plate_blue.svg") center / 100% 100% no-repeat;
 }
 #game-shell #stage .primary-cta::after, #game-shell #stage .secondary-cta::after { content: none; }
 #game-shell #stage .primary-cta:hover:not(:disabled), #game-shell #stage .secondary-cta:hover:not(:disabled),
@@ -1353,7 +1353,7 @@ body { background: #3f3f3f; }
   padding: 0;
   border: 0;
   border-radius: 0;
-  background: url("assets/skai/v2/sound_hex.svg") center / 100% 100% no-repeat;
+  background: url("../assets/skai/v2/sound_hex.svg") center / 100% 100% no-repeat;
   box-shadow: none;
   color: #fff;
   font: 700 calc(42 * var(--u))/1 "Chakra Petch", sans-serif;
@@ -1447,7 +1447,7 @@ body { background: #3f3f3f; }
   padding: calc(10 * var(--u)) calc(26 * var(--u)) calc(10 * var(--u)) calc(62 * var(--u));
   border: calc(2 * var(--u)) solid #fdda76;
   border-radius: calc(14 * var(--u));
-  background: url("assets/skai/v2/speaker.svg") calc(22 * var(--u)) center / calc(28 * var(--u)) no-repeat, #0a2d94;
+  background: url("../assets/skai/v2/speaker.svg") calc(22 * var(--u)) center / calc(28 * var(--u)) no-repeat, #0a2d94;
   color: #fff;
   font: 700 calc(24 * var(--u))/1 "Chakra Petch", sans-serif;
   letter-spacing: .04em;
@@ -1515,7 +1515,7 @@ body { background: #3f3f3f; }
   transform: translate(-50%, -50%) scale(var(--fit, 1));
 }
 /* Letterbox bars (screens that are wider or taller than 16:9) show a soft room instead of flat grey. */
-body { background: #2b2f3a url("assets/backgrounds/bg_learning_room_clean.png") center / cover no-repeat; }
+body { background: #2b2f3a url("../assets/backgrounds/bg_learning_room_clean.png") center / cover no-repeat; }
 body::before { content: ""; position: fixed; inset: 0; background: rgba(15, 20, 35, .45); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
 /* Small screens: make the round HUD buttons easier to hit without changing how they look. */
 .hud-button::before { content: ""; position: absolute; inset: calc(-14 * var(--u)); }
