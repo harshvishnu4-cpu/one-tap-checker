@@ -3,6 +3,29 @@
 
   const stage = document.querySelector('#stage');
   const gameShell = document.querySelector('#game-shell');
+
+  // Responsive frame: the game is laid out at 1600×900 and scaled as a whole to fit the screen (see styles.css).
+  function fitGameToScreen() {
+    const view = window.visualViewport;
+    const width = view ? view.width : window.innerWidth;
+    const height = view ? view.height : window.innerHeight;
+    gameShell.style.setProperty('--fit', String(Math.min(width / 1600, height / 900)));
+  }
+  fitGameToScreen();
+  window.addEventListener('resize', fitGameToScreen);
+  window.addEventListener('orientationchange', () => setTimeout(fitGameToScreen, 150));
+  window.visualViewport?.addEventListener('resize', fitGameToScreen);
+
+  // On phones and tablets, Start goes fullscreen and asks for landscape so the game uses the whole screen.
+  function enterPlayMode() {
+    if (!matchMedia('(pointer: coarse)').matches || document.fullscreenElement) return;
+    const root = document.documentElement;
+    const request = root.requestFullscreen || root.webkitRequestFullscreen;
+    if (!request) return;
+    Promise.resolve(request.call(root))
+      .then(() => screen.orientation?.lock?.('landscape'))
+      .catch(() => { /* not supported (e.g. iPhone Safari) — the game still scales to fit */ });
+  }
   const toastEl = document.querySelector('#toast');
   const loadingEl = document.querySelector('#loading');
   const settingsModal = document.querySelector('#settings-modal');
@@ -521,6 +544,10 @@
     const left = Math.max(0, state.timeLeft);
     skaiTimerText.textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
     skaiTimerText.parentElement.classList.toggle('low', left > 0 && left <= 5 * 60);
+    // Draining bar inside the timer plate: shows at a glance how much of the mission is left.
+    const timerPlate = skaiTimerText.parentElement;
+    timerPlate.style.setProperty('--time-left', String(left / MISSION_SECONDS));
+    timerPlate.classList.toggle('warn', left > 5 * 60 && left <= 10 * 60);
   }
   function startMissionClock() {
     if (missionTimer) return;
@@ -530,6 +557,7 @@
       renderMissionClock();
     }, 1000);
   }
+  renderMissionClock();
   function stopMissionClock() {
     clearInterval(missionTimer);
     missionTimer = null;
@@ -561,7 +589,7 @@
       <img class="welcome-thumbnail" src="assets/thumbnails/forwarded-message-checker.png" alt="Forwarded Message Checker — investigate messages together. For 3–4 players.">
       <div class="welcome-actions"><button class="primary-cta" id="start-mission" type="button">Start mission <span aria-hidden="true">→</span></button></div>
     </section>`;
-    onTap('#start-mission', () => { tone('tap'); setView('setup', renderSetup); });
+    onTap('#start-mission', () => { tone('tap'); enterPlayMode(); setView('setup', renderSetup); });
   }
 
   function renderSetup() {

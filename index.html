@@ -44,6 +44,7 @@
       <div class="hud-timer" role="timer" aria-label="Mission time left">
         <img src="assets/skai/v2/timer_plate.svg" alt="">
         <span class="skai-timer-text" id="skai-timer-text">35:00</span>
+        <span class="timer-progress" aria-hidden="true"><i id="timer-progress-fill"></i></span>
       </div>
       <ul id="skai-players" class="skai-chips hud-chips" aria-label="Players"></ul>
       <div class="hud-progress" id="skai-progress" role="img" aria-label="Mission step 1 of 10">
@@ -109,6 +110,7 @@
     </div>
   </div>
 
+  <div class="rotate-prompt" role="alert"><span class="rotate-phone" aria-hidden="true"></span><strong>Turn your device sideways to play</strong><small>Forwarded Message Checker is played in landscape.</small></div>
   <script src="data/messages.js"></script>
   <script src="game.js"></script>
   <script src="dev/dev-menu.js"></script><!-- DEV MENU: delete with the dev/ folder -->
