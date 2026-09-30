@@ -1406,7 +1406,7 @@ body { background: #3f3f3f; }
 /* Full-screen thumbnail; it is 16:9 like the game, so cover crops at most a sliver. */
 .welcome-thumbnail { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
 /* Start button floats bottom-left, over the parent’s sweater, so it never hides the title, the 3–4 players badge or the icons. */
-.welcome-actions { position: absolute; left: 50%; bottom: calc(148 * var(--u)); z-index: 2; padding: 0; background: none; transform: translateX(-50%); }
+.welcome-actions { position: absolute; left: 50%; bottom: calc(26 * var(--u)); z-index: 2; padding: 0; background: none; transform: translateX(-50%); }
 #game-shell #stage .welcome-actions .primary-cta { width: calc(640 * var(--u)); min-height: calc(180 * var(--u)); font-size: calc(58 * var(--u)); }
 
 /* Shared player/role handoff, over the unchanged mission scene. */
